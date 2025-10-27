@@ -46,6 +46,7 @@ select {
 .primary { background: var(--primary); color: white; border: 2px solid var(--primary); padding: 10px 14px; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; }
 .primary:disabled { opacity: 0.6; cursor: not-allowed; }
 .primary:hover { background: var(--primary-600); }
+button, input, select { min-height: 44px; }
 
 .type-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 10px; }
 .type-btn { padding: 10px; border-radius: 8px; background: #fff8ec; color: var(--text); border: 2px solid var(--line); cursor: pointer; text-align: left; }
@@ -68,6 +69,9 @@ select {
 .bold { font-weight: 700; }
 .winner { margin-top: 10px; padding: 12px; border: 2px solid var(--line); border-radius: 8px; background: #fff8ec; }
 .meta { color: var(--muted); margin-top: 4px; }
+
+/* Sticky bottom actions for mobile */
+.sticky-footer { position: sticky; bottom: 0; background: var(--panel); padding: 12px calc(16px + env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left)); border-top: 2px solid var(--line); z-index: 10; }
 
 /* Inline edit controls */
 .edit-actions { margin-left: 8px; display: inline-flex; gap: 8px; }

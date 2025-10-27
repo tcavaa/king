@@ -110,7 +110,7 @@ export default function ScoreTable({ players, rounds, onEditLastRound }) {
                 {players.map((p) => (
                   <div key={p.id} className="td center">
                     {isEditing && isLast && r.countsByPlayerId ? (
-                      <input type="number" min="0" value={draftCounts[p.id] ?? ''} onChange={(e) => changeCount(p.id, e.target.value)} />
+                      <input type="number" min="0" inputMode="numeric" pattern="[0-9]*" style={{ fontSize: 16 }} value={draftCounts[p.id] ?? ''} onChange={(e) => changeCount(p.id, e.target.value)} />
                     ) : isEditing && isLast && r.singleTargetPlayerId != null ? (
                       <input type="radio" name="editSingle" checked={draftSingle === p.id} onChange={() => setDraftSingle(p.id)} />
                     ) : (

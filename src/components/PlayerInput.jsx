@@ -45,13 +45,13 @@ export default function PlayerInput({ onStart }) {
         {Array.from({ length: numPlayers }).map((_, i) => (
           <label key={i} className="input-row">
             <span>Player {i + 1}</span>
-            <input type="text" value={names[i] || ''} placeholder={`Enter name`} onChange={(e) => updateName(i, e.target.value)} />
+            <input type="text" style={{ fontSize: 16, minHeight: 44 }} value={names[i] || ''} placeholder={`Enter name`} onChange={(e) => updateName(i, e.target.value)} />
           </label>
         ))}
       </div>
 
       <div className="actions">
-        <button type="button" className="primary" disabled={!canStart} onClick={startGame}>Start Game</button>
+        <button type="button" className="primary" style={{ minHeight: 44 }} disabled={!canStart} onClick={startGame}>Start Game</button>
       </div>
     </div>
   )

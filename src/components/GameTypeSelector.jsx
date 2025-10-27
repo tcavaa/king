@@ -117,6 +117,9 @@ export default function GameTypeSelector({
                 <input
                   type="number"
                   min="0"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  style={{ fontSize: 16 }}
                   value={countsByPlayerId[p.id] ?? ''}
                   onChange={(e) => handleCountChange(p.id, e.target.value)}
                 />
@@ -150,7 +153,7 @@ export default function GameTypeSelector({
         <div className="validation">{validationMessage}</div>
       )}
 
-      <div className="actions">
+      <div className="actions sticky-footer">
         <button type="button" className="primary" disabled={Boolean(validationMessage)} onClick={endRound}>
           End Round
         </button>

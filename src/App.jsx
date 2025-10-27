@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import PlayerInput from './components/PlayerInput.jsx'
 import GameTypeSelector, { GAME_TYPES } from './components/GameTypeSelector.jsx'
 import ScoreTable from './components/ScoreTable.jsx'
@@ -9,6 +9,36 @@ function App() {
   const [players, setPlayers] = useState(null)
   const [activePlayerIndex, setActivePlayerIndex] = useState(0)
   const [rounds, setRounds] = useState([])
+  const [hydrated, setHydrated] = useState(false)
+
+  // Load from localStorage on first mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('king-score-state')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && Array.isArray(parsed.rounds) && (parsed.players === null || Array.isArray(parsed.players))) {
+          setPlayers(parsed.players)
+          setActivePlayerIndex(parsed.activePlayerIndex || 0)
+          setRounds(parsed.rounds)
+        }
+      }
+    } catch (e) {
+      // ignore corrupted storage
+    }
+    setHydrated(true)
+  }, [])
+
+  // Persist to localStorage on change
+  useEffect(() => {
+    if (!hydrated) return
+    const snapshot = { players, activePlayerIndex, rounds }
+    try {
+      localStorage.setItem('king-score-state', JSON.stringify(snapshot))
+    } catch (e) {
+      // storage may be full or blocked; fail silently
+    }
+  }, [players, activePlayerIndex, rounds, hydrated])
 
   // track used game types per player
   const usedTypesByPlayer = useMemo(() => {
@@ -87,6 +117,21 @@ function App() {
           <img className="logo" src="/12427687.png" alt="King Score logo" />
           <h1>King</h1>
         </div>
+        <div className="actions">
+          <button
+            className="primary"
+            onClick={() => {
+              const ok = window.confirm('Are you sure you want to reset the current game? This will clear all progress.')
+              if (!ok) return
+              localStorage.removeItem('king-score-state')
+              setPlayers(null)
+              setActivePlayerIndex(0)
+              setRounds([])
+            }}
+          >
+            Reset
+          </button>
+        </div>
       </header>
 
       {!players && (
@@ -115,7 +160,7 @@ function App() {
         <>
           <ScoreTable players={players} rounds={rounds} />
           <div className="actions center">
-            <button className="primary" onClick={() => setPlayers(null)}>New Game</button>
+            <button className="primary" onClick={() => { setPlayers(null); setActivePlayerIndex(0); setRounds([]); }}>New Game</button>
           </div>
         </>
       )}
