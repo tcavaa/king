@@ -45,10 +45,48 @@ function App() {
     })
   }
 
+  function onEditLastRound(patch) {
+    setRounds((prev) => {
+      if (prev.length === 0) return prev
+      const next = [...prev]
+      const lastIdx = next.length - 1
+      const last = { ...next[lastIdx] }
+      if (patch.countsByPlayerId) {
+        last.countsByPlayerId = { ...patch.countsByPlayerId }
+        // recompute scores from counts using game type metadata
+        const type = GAME_TYPES.find((t) => t.code === last.gameTypeCode)
+        if (type && type.kind === 'count') {
+          const scores = {}
+          players.forEach((p) => {
+            const units = Number(last.countsByPlayerId[p.id] || 0)
+            scores[p.id] = units * (type.pointsPerUnit || 0)
+          })
+          last.scores = scores
+        }
+      }
+      if (patch.singleTargetPlayerId != null) {
+        last.singleTargetPlayerId = patch.singleTargetPlayerId
+        const type = GAME_TYPES.find((t) => t.code === last.gameTypeCode)
+        if (type && type.kind === 'single') {
+          const scores = {}
+          players.forEach((p) => {
+            scores[p.id] = p.id === last.singleTargetPlayerId ? type.points : 0
+          })
+          last.scores = scores
+        }
+      }
+      next[lastIdx] = last
+      return next
+    })
+  }
+
   return (
     <div className="app">
       <header className="header">
-        <h1>King Score</h1>
+        <div className="brand">
+          <img className="logo" src="/12427687.png" alt="King Score logo" />
+          <h1>King</h1>
+        </div>
       </header>
 
       {!players && (
@@ -64,7 +102,7 @@ function App() {
             usedTypesByPlayer={usedTypesByPlayer}
             onRoundComplete={onRoundComplete}
           />
-          <ScoreTable players={players} rounds={rounds} />
+          <ScoreTable players={players} rounds={rounds} onEditLastRound={onEditLastRound} />
           
           <div className="meta">
             <div>Round {rounds.length + 1} / {targetRoundsCount}</div>

@@ -22,6 +22,8 @@ body {
 
 .app { max-width: 1100px; margin: 0 auto; padding: 24px; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 14px 16px; background: var(--primary); color: #fff; border-radius: 10px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand .logo { width: 36px; height: 36px; border-radius: 6px; object-fit: contain; background: #fff; padding: 2px; }
 .header h1 { font-size: 28px; margin: 0; letter-spacing: 0.5px; text-transform: uppercase; }
 
 .card { background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
@@ -29,7 +31,7 @@ h2 { margin: 0 0 12px; font-size: 20px; }
 h3 { margin: 0 0 8px; font-size: 16px; color: var(--muted); font-weight: 500; }
 
 .row { display: flex; gap: 12px; align-items: center; }
-.inline { display: inline-flex; gap: 12px; align-items: center; }
+.inline { margin:10px; display: inline-flex; gap: 12px; align-items: center; }
 
 .inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
 .input-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; background: #fff8ec; border: 2px solid var(--line); border-radius: 8px; }
@@ -66,6 +68,13 @@ select {
 .bold { font-weight: 700; }
 .winner { margin-top: 10px; padding: 12px; border: 2px solid var(--line); border-radius: 8px; background: #fff8ec; }
 .meta { color: var(--muted); margin-top: 4px; }
+
+/* Inline edit controls */
+.edit-actions { margin-left: 8px; display: inline-flex; gap: 8px; }
+.link { background: #fff8ec; border: 2px solid var(--line); color: var(--primary); cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 6px; font-size: 12px; }
+.link:hover { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+.td input[type="number"] { width: 70px; padding: 6px 8px; border-radius: 6px; border: 2px solid var(--line); background: #ffffff; color: var(--text); }
+.td input[type="radio"] { transform: scale(1.2); }
 
 /* Matrix */
 .matrix-grid { display: grid; grid-auto-rows: minmax(36px, auto); gap: 6px; }

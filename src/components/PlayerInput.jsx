@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 export default function PlayerInput({ onStart }) {
-  const [numPlayers, setNumPlayers] = useState(4)
+  const [numPlayers, setNumPlayers] = useState(3)
   const [names, setNames] = useState(['', '', '', ''])
 
   useEffect(() => {
