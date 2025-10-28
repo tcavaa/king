@@ -1,21 +1,12 @@
-import { useMemo, useState } from 'react'
-
-export const GAME_TYPES = [
-  { code: 'K', label: 'K — No King of hearts', kind: 'single', points: -40, totalUnits: 1 },
-  { code: 'Q', label: 'Q — No Queens', kind: 'count', pointsPerUnit: -10, totalUnits: 4, unitLabel: 'Queens' },
-  { code: 'J', label: 'J — No Jacks', kind: 'count', pointsPerUnit: -10, totalUnits: 4, unitLabel: 'Jacks' },
-  { code: 'H', label: '<3 — No Hearts', kind: 'count', pointsPerUnit: -5, totalUnits: 8, unitLabel: 'Hearts' },
-  { code: 'L2', label: 'L2 — No Last 2', kind: 'count', pointsPerUnit: -20, totalUnits: 2, unitLabel: 'Last 2' },
-  { code: 'T', label: '- — No Tricks', kind: 'count', pointsPerUnit: -4, totalUnits: 10, unitLabel: 'Tricks' },
-  { code: 'P1', label: '+ — Pluses (1)', kind: 'count', pointsPerUnit: 8, totalUnits: 10, unitLabel: 'Tricks' },
-  { code: 'P2', label: '+ — Pluses (2)', kind: 'count', pointsPerUnit: 8, totalUnits: 10, unitLabel: 'Tricks' },
-  { code: 'P3', label: '+ — Pluses (3)', kind: 'count', pointsPerUnit: 8, totalUnits: 10, unitLabel: 'Tricks' },
-]
+import { useMemo, useState, useEffect, useRef } from 'react'
+import { GAME_TYPES } from '../constants/gameTypes'
+import { computeScoresForRound } from '../utils/scoring'
 
 export default function GameTypeSelector({
   players,
   activePlayerIndex,
   usedTypesByPlayer,
+  preselectedCode,
   onRoundComplete,
 }) {
   const [selectedTypeCode, setSelectedTypeCode] = useState(null)
@@ -33,6 +24,23 @@ export default function GameTypeSelector({
     () => GAME_TYPES.find((t) => t.code === selectedTypeCode) || null,
     [selectedTypeCode]
   )
+
+  useEffect(() => {
+    if (!preselectedCode) return
+    const usedSet = usedTypesByPlayer[activePlayer.id] || new Set()
+    if (!usedSet.has(preselectedCode)) setSelectedTypeCode(preselectedCode)
+  }, [preselectedCode, activePlayer.id, usedTypesByPlayer])
+
+  useEffect(() => {
+    function handler(e) {
+      const code = e.detail?.code
+      if (!code) return
+      const usedSet = usedTypesByPlayer[activePlayer.id] || new Set()
+      if (!usedSet.has(code)) setSelectedTypeCode(code)
+    }
+    window.addEventListener('preselectGameType', handler)
+    return () => window.removeEventListener('preselectGameType', handler)
+  }, [activePlayer.id, usedTypesByPlayer])
 
   const sumCounts = useMemo(
     () => Object.values(countsByPlayerId).reduce((a, b) => a + (Number(b) || 0), 0),
@@ -59,19 +67,7 @@ export default function GameTypeSelector({
   }
 
   function computeScores() {
-    const scores = {}
-    if (!selectedType) return scores
-    if (selectedType.kind === 'count') {
-      players.forEach((p) => {
-        const units = Number(countsByPlayerId[p.id] || 0)
-        scores[p.id] = units * (selectedType.pointsPerUnit || 0)
-      })
-    } else if (selectedType.kind === 'single') {
-      players.forEach((p) => {
-        scores[p.id] = p.id === singleTargetPlayerId ? selectedType.points : 0
-      })
-    }
-    return scores
+    return computeScoresForRound(selectedType, players, countsByPlayerId, singleTargetPlayerId)
   }
 
   function endRound() {
@@ -89,6 +85,13 @@ export default function GameTypeSelector({
     setCountsByPlayerId({})
     setSingleTargetPlayerId(null)
   }
+
+  const firstInputRef = useRef(null)
+  useEffect(() => {
+    if (selectedType && selectedType.kind === 'count') {
+      firstInputRef.current && firstInputRef.current.focus()
+    }
+  }, [selectedType])
 
   return (
     <div className="card game-type-selector">
@@ -114,15 +117,20 @@ export default function GameTypeSelector({
             {players.map((p) => (
               <label key={p.id} className="input-row">
                 <span>{p.name}</span>
-                <input
+                <div className="stepper">
+                  <button type="button" className="link" onClick={() => handleCountChange(p.id, (countsByPlayerId[p.id] || 0) - 1)}>-</button>
+                  <input
                   type="number"
                   min="0"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  style={{ fontSize: 16 }}
+                  className="num-input"
+                  ref={firstInputRef}
                   value={countsByPlayerId[p.id] ?? ''}
                   onChange={(e) => handleCountChange(p.id, e.target.value)}
                 />
+                  <button type="button" className="link" onClick={() => handleCountChange(p.id, (countsByPlayerId[p.id] || 0) + 1)}>+</button>
+                </div>
               </label>
             ))}
           </div>

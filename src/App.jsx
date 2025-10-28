@@ -1,15 +1,42 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
+import { computeScoresForRound } from './utils/scoring'
 import PlayerInput from './components/PlayerInput.jsx'
-import GameTypeSelector, { GAME_TYPES } from './components/GameTypeSelector.jsx'
+import GameTypeSelector from './components/GameTypeSelector.jsx'
+import { GAME_TYPES } from './constants/gameTypes'
 import ScoreTable from './components/ScoreTable.jsx'
 import GameTypeMatrix from './components/GameTypeMatrix.jsx'
 import './styles/main.css'
 
 function App() {
-  const [players, setPlayers] = useState(null)
-  const [activePlayerIndex, setActivePlayerIndex] = useState(0)
-  const [rounds, setRounds] = useState([])
+  const [state, dispatch] = useReducer(
+    (s, action) => {
+      switch (action.type) {
+        case 'HYDRATE':
+          return { ...s, ...action.payload }
+        case 'START':
+          return { players: action.players, activePlayerIndex: 0, rounds: [] }
+        case 'END_ROUND': {
+          const rounds = [...s.rounds, action.round]
+          const nextLeader = s.players ? (s.activePlayerIndex + 1) % s.players.length : 0
+          return { ...s, rounds, activePlayerIndex: nextLeader }
+        }
+        case 'EDIT_LAST': {
+          if (!s.rounds.length) return s
+          const next = [...s.rounds]
+          next[next.length - 1] = action.round
+          return { ...s, rounds: next }
+        }
+        case 'RESET':
+          return { players: null, activePlayerIndex: 0, rounds: [] }
+        default:
+          return s
+      }
+    },
+    { players: null, activePlayerIndex: 0, rounds: [] }
+  )
+  const { players, activePlayerIndex, rounds } = state
   const [hydrated, setHydrated] = useState(false)
+  const [preselectedTypeCode, setPreselectedTypeCode] = useState(null)
 
   // Load from localStorage on first mount
   useEffect(() => {
@@ -18,9 +45,7 @@ function App() {
       if (saved) {
         const parsed = JSON.parse(saved)
         if (parsed && Array.isArray(parsed.rounds) && (parsed.players === null || Array.isArray(parsed.players))) {
-          setPlayers(parsed.players)
-          setActivePlayerIndex(parsed.activePlayerIndex || 0)
-          setRounds(parsed.rounds)
+          dispatch({ type: 'HYDRATE', payload: { players: parsed.players, activePlayerIndex: parsed.activePlayerIndex || 0, rounds: parsed.rounds } })
         }
       }
     } catch (e) {
@@ -60,55 +85,26 @@ function App() {
 
   const gameFinished = players && rounds.length >= targetRoundsCount
 
-  function handleStart(playersList) {
-    setPlayers(playersList)
-    setActivePlayerIndex(0)
-    setRounds([])
-  }
+  const handleStart = useCallback((playersList) => {
+    dispatch({ type: 'START', players: playersList })
+  }, [])
 
-  function onRoundComplete(roundRecord) {
-    setRounds((prev) => [...prev, roundRecord])
-    // advance leader to next player
-    setActivePlayerIndex((prev) => {
-      if (!players) return 0
-      return (prev + 1) % players.length
-    })
-  }
+  const onRoundComplete = useCallback((roundRecord) => {
+    dispatch({ type: 'END_ROUND', round: roundRecord })
+    setPreselectedTypeCode(null)
+  }, [])
 
-  function onEditLastRound(patch) {
-    setRounds((prev) => {
-      if (prev.length === 0) return prev
-      const next = [...prev]
-      const lastIdx = next.length - 1
-      const last = { ...next[lastIdx] }
-      if (patch.countsByPlayerId) {
-        last.countsByPlayerId = { ...patch.countsByPlayerId }
-        // recompute scores from counts using game type metadata
-        const type = GAME_TYPES.find((t) => t.code === last.gameTypeCode)
-        if (type && type.kind === 'count') {
-          const scores = {}
-          players.forEach((p) => {
-            const units = Number(last.countsByPlayerId[p.id] || 0)
-            scores[p.id] = units * (type.pointsPerUnit || 0)
-          })
-          last.scores = scores
-        }
-      }
-      if (patch.singleTargetPlayerId != null) {
-        last.singleTargetPlayerId = patch.singleTargetPlayerId
-        const type = GAME_TYPES.find((t) => t.code === last.gameTypeCode)
-        if (type && type.kind === 'single') {
-          const scores = {}
-          players.forEach((p) => {
-            scores[p.id] = p.id === last.singleTargetPlayerId ? type.points : 0
-          })
-          last.scores = scores
-        }
-      }
-      next[lastIdx] = last
-      return next
-    })
-  }
+  const onEditLastRound = useCallback((patch) => {
+    if (!players || rounds.length === 0) return
+    const lastIdx = rounds.length - 1
+    const current = rounds[lastIdx]
+    let nextRound = { ...current }
+    if (patch.countsByPlayerId) nextRound.countsByPlayerId = { ...patch.countsByPlayerId }
+    if (patch.singleTargetPlayerId != null) nextRound.singleTargetPlayerId = patch.singleTargetPlayerId
+    const type = GAME_TYPES.find((t) => t.code === nextRound.gameTypeCode)
+    nextRound.scores = computeScoresForRound(type, players, nextRound.countsByPlayerId, nextRound.singleTargetPlayerId)
+    dispatch({ type: 'EDIT_LAST', round: nextRound })
+  }, [players, rounds])
 
   return (
     <div className="app">
@@ -124,9 +120,7 @@ function App() {
               const ok = window.confirm('Are you sure you want to reset the current game? This will clear all progress.')
               if (!ok) return
               localStorage.removeItem('king-score-state')
-              setPlayers(null)
-              setActivePlayerIndex(0)
-              setRounds([])
+              dispatch({ type: 'RESET' })
             }}
           >
             Reset
@@ -140,11 +134,17 @@ function App() {
 
       {players && !gameFinished && (
         <>
-        <GameTypeMatrix players={players} usedTypesByPlayer={usedTypesByPlayer} activePlayerIndex={activePlayerIndex} />
+          <GameTypeMatrix
+            players={players}
+            usedTypesByPlayer={usedTypesByPlayer}
+            activePlayerIndex={activePlayerIndex}
+            onPreselect={(code) => setPreselectedTypeCode(code)}
+          />
           <GameTypeSelector
             players={players}
             activePlayerIndex={activePlayerIndex}
             usedTypesByPlayer={usedTypesByPlayer}
+            preselectedCode={preselectedTypeCode}
             onRoundComplete={onRoundComplete}
           />
           <ScoreTable players={players} rounds={rounds} onEditLastRound={onEditLastRound} />
@@ -160,7 +160,7 @@ function App() {
         <>
           <ScoreTable players={players} rounds={rounds} />
           <div className="actions center">
-            <button className="primary" onClick={() => { setPlayers(null); setActivePlayerIndex(0); setRounds([]); }}>New Game</button>
+            <button className="primary" onClick={() => { dispatch({ type: 'RESET' }) }}>New Game</button>
           </div>
         </>
       )}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { GAME_TYPES } from './GameTypeSelector.jsx'
+import { GAME_TYPES } from '../constants/gameTypes'
 
 export default function ScoreTable({ players, rounds, onEditLastRound }) {
   const totals = players.reduce((acc, p) => {
@@ -100,24 +100,28 @@ export default function ScoreTable({ players, rounds, onEditLastRound }) {
                       )}
                       {isEditing && (
                         <>
-                          <button className="link" onClick={saveEdit}>Save</button>
+                          <button className="link" disabled={Boolean(validationMessage)} onClick={saveEdit}>Save</button>
                           <button className="link" onClick={cancelEdit}>Cancel</button>
                         </>
                       )}
                     </span>
                   )}
                 </div>
-                {players.map((p) => (
-                  <div key={p.id} className="td center">
-                    {isEditing && isLast && r.countsByPlayerId ? (
-                      <input type="number" min="0" inputMode="numeric" pattern="[0-9]*" style={{ fontSize: 16 }} value={draftCounts[p.id] ?? ''} onChange={(e) => changeCount(p.id, e.target.value)} />
-                    ) : isEditing && isLast && r.singleTargetPlayerId != null ? (
-                      <input type="radio" name="editSingle" checked={draftSingle === p.id} onChange={() => setDraftSingle(p.id)} />
-                    ) : (
-                      r.scores[p.id] ?? ''
-                    )}
-                  </div>
-                ))}
+                {players.map((p) => {
+                  const display = r.scores[p.id]
+                  const className = typeof display === 'number' ? (display >= 0 ? 'td center pos' : 'td center neg') : 'td center'
+                  return (
+                    <div key={p.id} className={className}>
+                      {isEditing && isLast && r.countsByPlayerId ? (
+                        <input type="number" min="0" inputMode="numeric" pattern="[0-9]*" className="num-input" value={draftCounts[p.id] ?? ''} onChange={(e) => changeCount(p.id, e.target.value)} />
+                      ) : isEditing && isLast && r.singleTargetPlayerId != null ? (
+                        <input type="radio" name="editSingle" checked={draftSingle === p.id} onChange={() => setDraftSingle(p.id)} />
+                      ) : (
+                        display ?? ''
+                      )}
+                    </div>
+                  )
+                })}
                 {isEditing && isLast && selectedType && selectedType.kind === 'count' && (
                   <div className="td center" style={{ gridColumn: `1 / span ${players.length + 1}` }}>
                     <div className="sum-note">Sum: {draftSum} / {selectedType.totalUnits}</div>
@@ -129,9 +133,11 @@ export default function ScoreTable({ players, rounds, onEditLastRound }) {
           })}
           <div className="tr">
             <div className="td bold">Totals</div>
-            {players.map((p) => (
-              <div key={p.id} className="td center bold">{totals[p.id]}</div>
-            ))}
+            {players.map((p) => {
+              const val = totals[p.id]
+              const className = val >= 0 ? 'td center bold pos' : 'td center bold neg'
+              return <div key={p.id} className={className}>{val}</div>
+            })}
           </div>
         </div>
       </div>

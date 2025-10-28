@@ -1,6 +1,6 @@
-import { GAME_TYPES } from './GameTypeSelector.jsx'
+import { GAME_TYPES } from '../constants/gameTypes'
 
-export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlayerIndex }) {
+export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlayerIndex, onPreselect }) {
   return (
     <div className="card matrix">
       <h2>Game Types Availability</h2>
@@ -14,12 +14,18 @@ export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlaye
         {GAME_TYPES.map((t) => (
           <div key={t.code} className="matrix-row">
             <div className="cell type-col code">{t.code}</div>
-            {players.map((p) => {
+            {players.map((p, idx) => {
               const used = (usedTypesByPlayer[p.id] || new Set()).has(t.code)
               return (
-                <div key={p.id} className={`cell player-col ${used ? 'used' : 'available'}`}>
+                <button
+                  key={p.id}
+                  className={`cell player-col ${used ? 'used' : 'available'}`}
+                  type="button"
+                  disabled={used || idx !== activePlayerIndex}
+                  onClick={() => onPreselect && onPreselect(t.code)}
+                >
                   {used ? '✕' : '•'}
-                </div>
+                </button>
               )
             })}
           </div>

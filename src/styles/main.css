@@ -67,6 +67,8 @@ button, input, select { min-height: 44px; }
 .center { text-align: center; }
 .right { text-align: right; }
 .bold { font-weight: 700; }
+.pos { color: var(--accent-good); }
+.neg { color: var(--accent-bad); }
 .winner { margin-top: 10px; padding: 12px; border: 2px solid var(--line); border-radius: 8px; background: #fff8ec; }
 .meta { color: var(--muted); margin-top: 4px; }
 
@@ -78,6 +80,7 @@ button, input, select { min-height: 44px; }
 .link { background: #fff8ec; border: 2px solid var(--line); color: var(--primary); cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 6px; font-size: 12px; }
 .link:hover { background: var(--primary); color: #ffffff; border-color: var(--primary); }
 .td input[type="number"] { width: 70px; padding: 6px 8px; border-radius: 6px; border: 2px solid var(--line); background: #ffffff; color: var(--text); }
+.num-input { font-size: 16px; min-height: 44px; }
 .td input[type="radio"] { transform: scale(1.2); }
 
 /* Matrix */
@@ -90,5 +93,18 @@ button, input, select { min-height: 44px; }
 .matrix .player-col.available { color: var(--accent-good); }
 .legend { display: flex; gap: 12px; align-items: center; color: var(--muted); margin-top: 8px; }
 .legend .dot { display: inline-flex; width: 18px; justify-content: center; }
+
+/* Steppers */
+.stepper { display: inline-flex; gap: 6px; align-items: center; }
+.stepper .link { padding: 4px 10px; }
+
+/* Mobile layout tweaks */
+@media (max-width: 640px) {
+  .game-type-selector .inputs-grid { grid-template-columns: 1fr; }
+  .input-row { flex-wrap: wrap; gap: 8px; }
+  .input-row span { flex: 1 1 auto; }
+  .input-row .stepper { margin-left: auto; }
+  .num-input { width: 96px; }
+}
 
 
