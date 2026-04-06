@@ -5,6 +5,11 @@ import GameTypeSelector from './components/GameTypeSelector.jsx'
 import { GAME_TYPES } from './constants/gameTypes'
 import ScoreTable from './components/ScoreTable.jsx'
 import GameTypeMatrix from './components/GameTypeMatrix.jsx'
+import PlayersPage from './components/PlayersPage.jsx'
+import WinnersPage from './components/WinnersPage.jsx'
+import ScoreChart from './components/ScoreChart.jsx'
+import { supabase } from './lib/supabase.js'
+import confetti from 'canvas-confetti'
 import './styles/main.css'
 
 function App() {
@@ -37,6 +42,8 @@ function App() {
   const { players, activePlayerIndex, rounds } = state
   const [hydrated, setHydrated] = useState(false)
   const [preselectedTypeCode, setPreselectedTypeCode] = useState(null)
+  const [view, setView] = useState('home')
+  const [saving, setSaving] = useState(false)
 
   // Load from localStorage on first mount
   useEffect(() => {
@@ -45,7 +52,13 @@ function App() {
       if (saved) {
         const parsed = JSON.parse(saved)
         if (parsed && Array.isArray(parsed.rounds) && (parsed.players === null || Array.isArray(parsed.players))) {
-          dispatch({ type: 'HYDRATE', payload: { players: parsed.players, activePlayerIndex: parsed.activePlayerIndex || 0, rounds: parsed.rounds } })
+          // Guard against old p1/p2/p3 style ids (pre-Supabase migration)
+          const hasLegacyIds = Array.isArray(parsed.players) && parsed.players.some((p) => /^p\d+$/.test(p.id))
+          if (!hasLegacyIds) {
+            dispatch({ type: 'HYDRATE', payload: { players: parsed.players, activePlayerIndex: parsed.activePlayerIndex || 0, rounds: parsed.rounds } })
+          } else {
+            localStorage.removeItem('king-score-state')
+          }
         }
       }
     } catch (e) {
@@ -83,7 +96,41 @@ function App() {
     return players.length * GAME_TYPES.length
   }, [players])
 
-  const gameFinished = players && rounds.length >= targetRoundsCount
+  const gameFinished = !!(players && rounds.length >= targetRoundsCount && targetRoundsCount > 0)
+
+  useEffect(() => {
+    if (!gameFinished) return
+    confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } })
+  }, [gameFinished])
+
+  const handleComplete = useCallback(async () => {
+    if (!players) return
+    setSaving(true)
+
+    const totals = {}
+    players.forEach((p) => (totals[p.id] = 0))
+    rounds.forEach((r) => {
+      if (r.scores) players.forEach((p) => {
+        totals[p.id] = (totals[p.id] || 0) + (r.scores[p.id] || 0)
+      })
+    })
+
+    const winner = players.reduce(
+      (best, p) => (!best || totals[p.id] > totals[best.id] ? p : best),
+      null
+    )
+
+    const participants = players.map((p) => ({ name: p.name, score: totals[p.id] }))
+
+    await supabase.from('game_results').insert({
+      winner_name: winner.name,
+      participants,
+    })
+
+    setSaving(false)
+    localStorage.removeItem('king-score-state')
+    dispatch({ type: 'RESET' })
+  }, [players, rounds])
 
   const handleStart = useCallback((playersList) => {
     dispatch({ type: 'START', players: playersList })
@@ -113,7 +160,9 @@ function App() {
           <img className="logo" src="/12427687.png" alt="King Score logo" />
           <h1>King</h1>
         </div>
-        <div className="actions">
+        <div className="nav-actions">
+          <button className="link" onClick={() => setView('players')}>Players</button>
+          <button className="link" onClick={() => setView('winners')}>History</button>
           <button
             className="primary"
             onClick={() => {
@@ -121,6 +170,7 @@ function App() {
               if (!ok) return
               localStorage.removeItem('king-score-state')
               dispatch({ type: 'RESET' })
+              setView('home')
             }}
           >
             Reset
@@ -128,11 +178,19 @@ function App() {
         </div>
       </header>
 
-      {!players && (
+      {view === 'players' && (
+        <PlayersPage onBack={() => setView('home')} />
+      )}
+
+      {view === 'winners' && (
+        <WinnersPage onBack={() => setView('home')} />
+      )}
+
+      {view === 'home' && !players && (
         <PlayerInput onStart={handleStart} />
       )}
 
-      {players && !gameFinished && (
+      {view === 'home' && players && !gameFinished && (
         <>
           <GameTypeMatrix
             players={players}
@@ -148,7 +206,7 @@ function App() {
             onRoundComplete={onRoundComplete}
           />
           <ScoreTable players={players} rounds={rounds} onEditLastRound={onEditLastRound} />
-          
+
           <div className="meta">
             <div>Round {rounds.length + 1} / {targetRoundsCount}</div>
             <div>Leader: {players[activePlayerIndex].name}</div>
@@ -156,12 +214,18 @@ function App() {
         </>
       )}
 
-      {players && gameFinished && (
+      {view === 'home' && players && gameFinished && (
         <>
-          <ScoreTable players={players} rounds={rounds} />
+          <ScoreTable players={players} rounds={rounds} gameFinished />
           <div className="actions center">
-            <button className="primary" onClick={() => { dispatch({ type: 'RESET' }) }}>New Game</button>
+            <button className="primary" disabled={saving} onClick={handleComplete}>
+              {saving ? 'Saving...' : 'Complete'}
+            </button>
+            <button className="link" disabled={saving} onClick={handleComplete}>
+              New Game
+            </button>
           </div>
+          <ScoreChart players={players} rounds={rounds} />
         </>
       )}
     </div>
