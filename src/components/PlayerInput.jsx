@@ -1,30 +1,31 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { usePlayers } from '../hooks/usePlayers'
 
 export default function PlayerInput({ onStart }) {
+  const { players: savedPlayers, loading } = usePlayers()
   const [numPlayers, setNumPlayers] = useState(3)
-  const [names, setNames] = useState(['', '', '', ''])
+  const [selectedIds, setSelectedIds] = useState(['', '', '', ''])
 
-  useEffect(() => {
-    if (numPlayers === 3) setNames((prev) => prev.slice(0, 3))
-    if (numPlayers === 4 && names.length === 3) setNames((prev) => [...prev, ''])
-  }, [numPlayers])
-
-  function updateName(index, value) {
-    setNames((prev) => {
+  function updateSelection(index, id) {
+    setSelectedIds((prev) => {
       const next = [...prev]
-      next[index] = value
+      next[index] = id
       return next
     })
   }
 
+  const slice = selectedIds.slice(0, numPlayers)
+
   const canStart = useMemo(() => {
-    const slice = names.slice(0, numPlayers)
-    return slice.every((n) => n.trim().length > 0)
-  }, [names, numPlayers])
+    return slice.every((id) => id !== '') && new Set(slice).size === numPlayers
+  }, [slice, numPlayers])
 
   function startGame() {
     if (!canStart) return
-    const players = names.slice(0, numPlayers).map((name, idx) => ({ id: `p${idx + 1}`, name: name.trim() }))
+    const players = slice.map((id) => {
+      const p = savedPlayers.find((sp) => sp.id === id)
+      return { id, name: p.name }
+    })
     onStart(players)
   }
 
@@ -41,20 +42,43 @@ export default function PlayerInput({ onStart }) {
         </label>
       </div>
 
-      <div className="inputs-grid">
-        {Array.from({ length: numPlayers }).map((_, i) => (
-          <label key={i} className="input-row">
-            <span>Player {i + 1}</span>
-            <input type="text" style={{ fontSize: 16, minHeight: 44 }} value={names[i] || ''} placeholder={`Enter name`} onChange={(e) => updateName(i, e.target.value)} />
-          </label>
-        ))}
-      </div>
+      {loading ? (
+        <p style={{ color: 'var(--muted)', marginTop: 8 }}>Loading players...</p>
+      ) : savedPlayers.length < numPlayers ? (
+        <p className="validation" style={{ marginTop: 8 }}>
+          Not enough players saved. Go to <strong>Players</strong> in the menu to add at least {numPlayers}.
+        </p>
+      ) : (
+        <div className="inputs-grid">
+          {Array.from({ length: numPlayers }).map((_, i) => (
+            <label key={i} className="input-row">
+              <span>Player {i + 1}</span>
+              <select
+                value={selectedIds[i]}
+                onChange={(e) => updateSelection(i, e.target.value)}
+                style={{ flex: 1 }}
+              >
+                <option value="">-- Select --</option>
+                {savedPlayers.map((p) => (
+                  <option
+                    key={p.id}
+                    value={p.id}
+                    disabled={slice.includes(p.id) && selectedIds[i] !== p.id}
+                  >
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
+      )}
 
       <div className="actions">
-        <button type="button" className="primary" style={{ minHeight: 44 }} disabled={!canStart} onClick={startGame}>Start Game</button>
+        <button type="button" className="primary" style={{ minHeight: 44 }} disabled={!canStart} onClick={startGame}>
+          Start Game
+        </button>
       </div>
     </div>
   )
 }
-
-

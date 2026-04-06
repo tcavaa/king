@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { GAME_TYPES } from '../constants/gameTypes'
 
-export default function ScoreTable({ players, rounds, onEditLastRound }) {
+export default function ScoreTable({ players, rounds, onEditLastRound, gameFinished }) {
   const totals = players.reduce((acc, p) => {
     acc[p.id] = 0
     return acc
@@ -82,7 +82,9 @@ export default function ScoreTable({ players, rounds, onEditLastRound }) {
           <div className="tr">
             <div className="th">Round / Type</div>
             {players.map((p) => (
-              <div key={p.id} className="th center">{p.name}</div>
+              <div key={p.id} className="th center">
+                {rounds.length > 0 && winner && winner.player.id === p.id ? '👑 ' : ''}{p.name}
+              </div>
             ))}
           </div>
         </div>
@@ -142,8 +144,8 @@ export default function ScoreTable({ players, rounds, onEditLastRound }) {
         </div>
       </div>
 
-      {winner && (
-        <div className="winner">Winner: <strong>{winner.player.name}</strong> with {winner.total} points</div>
+      {gameFinished && winner && (
+        <div className="winner">👑 Winner: <strong>{winner.player.name}</strong> with {winner.total} points</div>
       )}
     </div>
   )
