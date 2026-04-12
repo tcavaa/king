@@ -271,6 +271,18 @@ button, input, select { min-height: 44px; }
 
 /* Mobile layout tweaks */
 @media (max-width: 640px) {
+  .app { padding: 12px; }
+
+  /* Header: stack brand above nav buttons */
+  .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .nav-actions { width: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+  .nav-actions .link, .nav-actions .primary { flex: 0 0 auto; font-size: 13px; padding: 6px 10px; }
+
+  /* History table: hide players column, make details always visible */
+  .history-tr { grid-template-columns: 1fr 1fr 60px; }
+  .history-tr .td:nth-child(3),
+  .history-tr .th:nth-child(3) { display: none; }
+
   .game-type-selector .inputs-grid { grid-template-columns: 1fr; }
   .input-row { flex-wrap: wrap; gap: 8px; }
   .input-row span { flex: 1 1 auto; }
