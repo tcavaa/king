@@ -3,9 +3,14 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts'
-import { computeGlobalStats, getGlobalAwards, TYPE_ROWS } from '../utils/analytics'
+import { computeGlobalStats, getGlobalAwards, TYPE_ROWS, computeKingMatrix, computeTypeEfficiency } from '../utils/analytics'
 
-const COLORS = ['#0f1e2e', '#059669', '#dc2626', '#d97706']
+import { PLAYER_COLORS as COLORS } from '../App'
+const TYPE_CODES = ['K', 'Q', 'J', 'H', 'L2', 'T', 'P1', 'P2', 'P3']
+
+function getCssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
 
 export default function GlobalAnalyticsPage({ details, results, onBack }) {
   const playerMap = useMemo(() => computeGlobalStats(details, results), [details, results])
@@ -16,6 +21,17 @@ export default function GlobalAnalyticsPage({ details, results, onBack }) {
       .sort((a, b) => b.gamesPlayed - a.gamesPlayed),
     [playerMap]
   )
+  const kingMatrix = useMemo(() => computeKingMatrix(details), [details])
+  const typeEfficiency = useMemo(() => computeTypeEfficiency(details), [details])
+
+  const kingLeaders = useMemo(() => Object.keys(kingMatrix).sort(), [kingMatrix])
+  const kingTargets = useMemo(() => {
+    const targets = new Set()
+    Object.values(kingMatrix).forEach(row => Object.keys(row).forEach(t => targets.add(t)))
+    return [...targets].sort()
+  }, [kingMatrix])
+
+  const effPlayers = useMemo(() => Object.keys(typeEfficiency).sort(), [typeEfficiency])
 
   // Bar chart: total units collected per card type per player
   const unitBarData = useMemo(() => {
@@ -133,10 +149,10 @@ export default function GlobalAnalyticsPage({ details, results, onBack }) {
         </p>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={unitBarData} margin={{ top: 8, right: 16, left: 0, bottom: 70 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2d9c9" />
-            <XAxis dataKey="type" tick={{ fontSize: 11, fill: '#6b7280' }} angle={-35} textAnchor="end" interval={0} />
-            <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} width={40} allowDecimals={false} />
-            <Tooltip contentStyle={{ background: '#fbf5e6', border: '2px solid #1e293b', borderRadius: 8, fontSize: 13 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={getCssVar('--grid-stroke')} />
+            <XAxis dataKey="type" tick={{ fontSize: 11, fill: getCssVar('--muted') }} angle={-35} textAnchor="end" interval={0} />
+            <YAxis tick={{ fontSize: 11, fill: getCssVar('--muted') }} width={40} allowDecimals={false} />
+            <Tooltip contentStyle={{ background: getCssVar('--tooltip-bg'), border: `2px solid ${getCssVar('--text')}`, borderRadius: 8, fontSize: 13 }} />
             <Legend wrapperStyle={{ fontSize: 13, paddingTop: 16 }} />
             {players.map((p, i) => (
               <Bar key={p.id} dataKey={p.name} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]} />
@@ -150,12 +166,12 @@ export default function GlobalAnalyticsPage({ details, results, onBack }) {
         <h2>Average Score per Game</h2>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={avgScoreData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2d9c9" />
-            <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} />
-            <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} width={44} />
-            <ReferenceLine y={0} stroke="#1e293b" strokeDasharray="4 2" />
+            <CartesianGrid strokeDasharray="3 3" stroke={getCssVar('--grid-stroke')} />
+            <XAxis dataKey="name" tick={{ fontSize: 12, fill: getCssVar('--muted') }} />
+            <YAxis tick={{ fontSize: 11, fill: getCssVar('--muted') }} width={44} />
+            <ReferenceLine y={0} stroke={getCssVar('--text')} strokeDasharray="4 2" />
             <Tooltip
-              contentStyle={{ background: '#fbf5e6', border: '2px solid #1e293b', borderRadius: 8, fontSize: 13 }}
+              contentStyle={{ background: getCssVar('--tooltip-bg'), border: `2px solid ${getCssVar('--text')}`, borderRadius: 8, fontSize: 13 }}
               formatter={v => [v, 'Avg Score']}
             />
             <Bar dataKey="avg" name="Avg Score" radius={[3, 3, 0, 0]}>
@@ -166,6 +182,89 @@ export default function GlobalAnalyticsPage({ details, results, onBack }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {/* King Targeting Matrix */}
+      {kingLeaders.length > 0 && (
+        <div className="card">
+          <h2>King Targeting Matrix</h2>
+          <p style={{ margin: '0 0 12px', color: 'var(--muted)', fontSize: 13 }}>
+            How many times each player sent the King to another player (across all games).
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <div className="king-matrix">
+              <div className="km-row km-header">
+                <div className="km-cell km-label">Dealer ↓ / Target →</div>
+                {kingTargets.map(t => (
+                  <div key={t} className="km-cell km-col-header">{t}</div>
+                ))}
+              </div>
+              {kingLeaders.map(leader => {
+                const row = kingMatrix[leader] || {}
+                const maxInRow = Math.max(0, ...Object.values(row))
+                return (
+                  <div key={leader} className="km-row">
+                    <div className="km-cell km-row-header">{leader}</div>
+                    {kingTargets.map(target => {
+                      const count = row[target] || 0
+                      const isSelf = leader === target
+                      let heatClass = 'heat-0'
+                      if (!isSelf && maxInRow > 0) {
+                        const ratio = count / maxInRow
+                        if (ratio >= 0.75) heatClass = 'heat-3'
+                        else if (ratio >= 0.5) heatClass = 'heat-2'
+                        else if (ratio >= 0.25) heatClass = 'heat-1'
+                      }
+                      return (
+                        <div key={target} className={`km-cell km-data ${isSelf ? 'km-self' : heatClass}`}>
+                          {isSelf ? '—' : count || 0}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Type Efficiency Table */}
+      {effPlayers.length > 0 && (
+        <div className="card">
+          <h2>Score Efficiency by Type</h2>
+          <p style={{ margin: '0 0 12px', color: 'var(--muted)', fontSize: 13 }}>
+            Average score per round for each card type (across all games played in that round).
+          </p>
+          <div style={{ overflowX: 'auto' }}>
+            <div className="eff-table">
+              <div className="eff-row eff-header">
+                <div className="eff-cell eff-name-col">Player</div>
+                {TYPE_CODES.map(code => (
+                  <div key={code} className="eff-cell eff-type-col">{code}</div>
+                ))}
+              </div>
+              {effPlayers.map(name => {
+                const data = typeEfficiency[name] || {}
+                return (
+                  <div key={name} className="eff-row">
+                    <div className="eff-cell eff-name-col bold">{name}</div>
+                    {TYPE_CODES.map(code => {
+                      const val = data[code]
+                      if (val === null || val === undefined) return <div key={code} className="eff-cell eff-type-col">—</div>
+                      const cls = val > 0 ? 'eff-pos' : val < 0 ? 'eff-neg' : ''
+                      return (
+                        <div key={code} className={`eff-cell eff-type-col ${cls}`}>
+                          {val > 0 ? '+' : ''}{val.toFixed(1)}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Category Leaderboards */}
       <div className="card">

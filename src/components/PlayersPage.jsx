@@ -8,6 +8,7 @@ export default function PlayersPage({ onBack }) {
   const [name, setName] = useState('')
   const [err, setErr] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(null) // player object to confirm
 
   const stats = useMemo(() => {
     const map = {}
@@ -71,7 +72,7 @@ export default function PlayersPage({ onBack }) {
                     <span className="player-stats">No games yet</span>
                   )}
                 </div>
-                <button className="link" onClick={() => deletePlayer(p.id)}>Remove</button>
+                <button className="link" style={{ color: '#dc2626' }} onClick={() => setConfirmDelete(p)}>Remove</button>
               </li>
             )
           })}
@@ -81,6 +82,25 @@ export default function PlayersPage({ onBack }) {
       <div className="actions">
         <button className="primary" onClick={onBack}>Back to Game</button>
       </div>
+
+      {confirmDelete && (
+        <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Remove Player</h3>
+            <p>Remove <strong>{confirmDelete.name}</strong>? This won't delete their game history.</p>
+            <div className="modal-actions">
+              <button className="link" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button
+                className="primary"
+                style={{ background: '#dc2626', borderColor: '#dc2626' }}
+                onClick={() => { deletePlayer(confirmDelete.id); setConfirmDelete(null) }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

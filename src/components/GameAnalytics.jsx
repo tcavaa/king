@@ -1,11 +1,15 @@
 import { useMemo } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer, ReferenceLine, Cell,
+  Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { computeGameStats, computeScoresByType, getGameAwards, TYPE_ROWS } from '../utils/analytics'
 
-const COLORS = ['#0f1e2e', '#059669', '#dc2626', '#d97706']
+import { PLAYER_COLORS as COLORS } from '../App'
+
+function getCssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
 
 export default function GameAnalytics({ players, rounds, participants }) {
   const stats = useMemo(() => computeGameStats(players, rounds), [players, rounds])
@@ -33,18 +37,18 @@ export default function GameAnalytics({ players, rounds, participants }) {
         <h2>Score by Game Type</h2>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={barData} margin={{ top: 8, right: 16, left: 0, bottom: 64 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2d9c9" />
+            <CartesianGrid strokeDasharray="3 3" stroke={getCssVar('--grid-stroke')} />
             <XAxis
               dataKey="type"
-              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tick={{ fontSize: 11, fill: getCssVar('--muted') }}
               angle={-35}
               textAnchor="end"
               interval={0}
             />
-            <YAxis tick={{ fontSize: 11, fill: '#6b7280' }} width={44} />
-            <ReferenceLine y={0} stroke="#1e293b" strokeDasharray="4 2" />
+            <YAxis tick={{ fontSize: 11, fill: getCssVar('--muted') }} width={44} />
+            <ReferenceLine y={0} stroke={getCssVar('--text')} strokeDasharray="4 2" />
             <Tooltip
-              contentStyle={{ background: '#fbf5e6', border: '2px solid #1e293b', borderRadius: 8, fontSize: 13 }}
+              contentStyle={{ background: getCssVar('--tooltip-bg'), border: `2px solid ${getCssVar('--text')}`, borderRadius: 8, fontSize: 13 }}
             />
             <Legend wrapperStyle={{ fontSize: 13, paddingTop: 12 }} />
             {players.map((p, i) => (
