@@ -76,7 +76,7 @@ export default function WinnersPage({ onBack }) {
                     {hasDetail ? (
                       <button
                         onClick={() => { setSelectedResultId(r.id); setSubView('detail') }}
-                        style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: 13, padding: 0, textDecoration: 'none' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: 13, padding: 0, textDecoration: 'none' }}
                       >
                         Details
                       </button>

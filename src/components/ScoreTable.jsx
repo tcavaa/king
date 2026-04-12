@@ -1,31 +1,68 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { GAME_TYPES } from '../constants/gameTypes'
 
-export default function ScoreTable({ players, rounds, onEditLastRound, gameFinished }) {
-  const totals = players.reduce((acc, p) => {
-    acc[p.id] = 0
-    return acc
-  }, {})
+function AnimatedScore({ value, from = 0, showSign = true }) {
+  const [displayed, setDisplayed] = useState(from)
+  const frameRef = useRef(null)
 
+  useEffect(() => {
+    const startVal = from
+    const target = value
+    if (startVal === target) { setDisplayed(target); return }
+    const duration = 500
+    const startTime = performance.now()
+    function step(now) {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplayed(Math.round(startVal + eased * (target - startVal)))
+      if (progress < 1) frameRef.current = requestAnimationFrame(step)
+    }
+    frameRef.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameRef.current)
+  }, [value, from])
+
+  return <span className="score-animated">{showSign && displayed > 0 ? `+${displayed}` : displayed}</span>
+}
+
+export default function ScoreTable({ players, rounds, onEditLastRound, gameFinished, playerColors = [] }) {
+  const totals = players.reduce((acc, p) => { acc[p.id] = 0; return acc }, {})
   rounds.forEach((r) => {
-    Object.entries(r.scores).forEach(([pid, score]) => {
-      totals[pid] += score
-    })
+    Object.entries(r.scores).forEach(([pid, score]) => { totals[pid] += score })
   })
 
-  const winner = players
-    .map((p) => ({ player: p, total: totals[p.id] }))
-    .sort((a, b) => b.total - a.total)[0]
+  const maxTotal = rounds.length > 0 && players.length > 0 ? Math.max(...players.map(p => totals[p.id])) : null
+  const leaders = new Set(maxTotal !== null ? players.filter(p => totals[p.id] === maxTotal).map(p => p.id) : [])
+  const isTie = leaders.size > 1
 
   const [isEditing, setIsEditing] = useState(false)
   const lastIndex = rounds.length - 1
   const lastRound = rounds[lastIndex]
+  const prevRoundCountRef = useRef(rounds.length)
+  const [newRowIdx, setNewRowIdx] = useState(-1)
+  const prevTotalsRef = useRef({})
+
+  useEffect(() => {
+    if (rounds.length > prevRoundCountRef.current) {
+      // Compute totals WITHOUT the new last round (previous state)
+      const prev = {}
+      players.forEach(p => { prev[p.id] = 0 })
+      rounds.slice(0, -1).forEach(r => {
+        Object.entries(r.scores || {}).forEach(([pid, score]) => { prev[pid] += score })
+      })
+      prevTotalsRef.current = prev
+      setNewRowIdx(rounds.length - 1)
+      const t = setTimeout(() => setNewRowIdx(-1), 900)
+      prevRoundCountRef.current = rounds.length
+      return () => clearTimeout(t)
+    }
+    prevRoundCountRef.current = rounds.length
+  }, [rounds.length])
 
   const [draftCounts, setDraftCounts] = useState(() => {
     if (!lastRound || !lastRound.countsByPlayerId) return {}
     return { ...lastRound.countsByPlayerId }
   })
-
   const [draftSingle, setDraftSingle] = useState(() => lastRound?.singleTargetPlayerId || null)
 
   const selectedTypeCode = lastRound?.gameTypeCode
@@ -37,15 +74,10 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
     setDraftSingle(lastRound.singleTargetPlayerId || null)
     setIsEditing(true)
   }
-
-  function cancelEdit() {
-    setIsEditing(false)
-  }
-
+  function cancelEdit() { setIsEditing(false) }
   function changeCount(pid, val) {
     setDraftCounts((p) => ({ ...p, [pid]: Math.max(0, Number(val || 0)) }))
   }
-
   function saveEdit() {
     if (!onEditLastRound || !lastRound) return
     onEditLastRound({
@@ -63,16 +95,18 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
   const validationMessage = useMemo(() => {
     if (!isEditing || !selectedType) return ''
     if (selectedType.kind === 'count') {
-      const total = selectedType.totalUnits
-      if (draftSum !== total) {
-        return `Distribute exactly ${total} ${selectedType.unitLabel || 'units'}`
-      }
+      if (draftSum !== selectedType.totalUnits) return `Distribute exactly ${selectedType.totalUnits} ${selectedType.unitLabel || 'units'}`
     }
-    if (selectedType.kind === 'single') {
-      if (!draftSingle) return 'Select the player who took it'
-    }
+    if (selectedType.kind === 'single' && !draftSingle) return 'Select the player who took it'
     return ''
   }, [isEditing, selectedType, draftSum, draftSingle])
+
+  // Danger zone: player more than 120pts behind leader (only after at least 1 round)
+  const dangerIds = new Set(
+    rounds.length > 0
+      ? players.filter(p => maxTotal - totals[p.id] >= 120).map(p => p.id)
+      : []
+  )
 
   return (
     <div className="card score-table" style={{ '--player-count': players.length }}>
@@ -81,9 +115,16 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
         <div className="thead">
           <div className="tr">
             <div className="th">Round / Type</div>
-            {players.map((p) => (
-              <div key={p.id} className="th center">
-                {rounds.length > 0 && winner && winner.player.id === p.id ? '👑 ' : ''}{p.name}
+            {players.map((p, i) => (
+              <div
+                key={p.id}
+                className="th center player-color-header"
+                style={{ borderBottom: playerColors[i] ? `3px solid ${playerColors[i]}` : undefined }}
+              >
+                <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2, minHeight: 14 }}>
+                  {leaders.has(p.id) ? (isTie ? '🤝' : '👑') : ''}
+                </div>
+                {p.name}
               </div>
             ))}
           </div>
@@ -91,8 +132,9 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
         <div className="tbody">
           {rounds.map((r, idx) => {
             const isLast = idx === lastIndex
+            const isNew = idx === newRowIdx
             return (
-              <div key={idx} className="tr">
+              <div key={idx} className={`tr${isNew ? ' score-new-row' : ''}`}>
                 <div className="td player-name">
                   {idx + 1} — {r.gameTypeCode}
                   {isLast && (
@@ -118,6 +160,8 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
                         <input type="number" min="0" inputMode="numeric" pattern="[0-9]*" className="num-input" value={draftCounts[p.id] ?? ''} onChange={(e) => changeCount(p.id, e.target.value)} />
                       ) : isEditing && isLast && r.singleTargetPlayerId != null ? (
                         <input type="radio" name="editSingle" checked={draftSingle === p.id} onChange={() => setDraftSingle(p.id)} />
+                      ) : isNew && typeof display === 'number' ? (
+                        <AnimatedScore value={display} />
                       ) : (
                         display ?? ''
                       )}
@@ -133,22 +177,36 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
               </div>
             )
           })}
-          <div className="tr">
+          <div className="tr totals-tr">
             <div className="td bold">Totals</div>
             {players.map((p) => {
               const val = totals[p.id]
-              const className = val >= 0 ? 'td center bold pos' : 'td center bold neg'
-              return <div key={p.id} className={className}>{val}</div>
+              const inDanger = dangerIds.has(p.id)
+              let cls = val >= 0 ? 'td center bold pos' : 'td center bold neg'
+              if (inDanger) cls += ' danger-zone'
+              const isAnimating = newRowIdx !== -1
+              const fromVal = prevTotalsRef.current[p.id] ?? val
+              return (
+                <div key={p.id} className={cls}>
+                  {inDanger && '💀 '}
+                  {isAnimating
+                    ? <AnimatedScore value={val} from={fromVal} showSign={false} />
+                    : val}
+                </div>
+              )
             })}
           </div>
         </div>
       </div>
 
-      {gameFinished && winner && (
-        <div className="winner">👑 Winner: <strong>{winner.player.name}</strong> with {winner.total} points</div>
+      {gameFinished && leaders.size > 0 && (
+        <div className="winner">
+          {isTie
+            ? <>🤝 Tie: <strong>{players.filter(p => leaders.has(p.id)).map(p => p.name).join(' & ')}</strong> with {maxTotal} points</>
+            : <>👑 Winner: <strong>{players.find(p => leaders.has(p.id))?.name}</strong> with {maxTotal} points</>
+          }
+        </div>
       )}
     </div>
   )
 }
-
-

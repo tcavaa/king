@@ -1,6 +1,6 @@
 import { GAME_TYPES } from '../constants/gameTypes'
 
-export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlayerIndex, onPreselect }) {
+export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlayerIndex, onPreselect, playerColors = [] }) {
   return (
     <div className="card matrix">
       <h2>Game Types Availability</h2>
@@ -8,7 +8,11 @@ export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlaye
         <div className="matrix-header sticky">
           <div className="cell type-col">Type</div>
           {players.map((p, idx) => (
-            <div key={p.id} className={`cell player-col ${idx === activePlayerIndex ? 'active' : ''}`}>{p.name}</div>
+            <div
+              key={p.id}
+              className={`cell player-col ${idx === activePlayerIndex ? 'active' : ''}`}
+              style={{ borderBottom: playerColors[idx] ? `3px solid ${playerColors[idx]}` : undefined }}
+            >{p.name}</div>
           ))}
         </div>
         {GAME_TYPES.map((t) => (

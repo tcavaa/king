@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { computeScoresForRound } from './utils/scoring'
 import PlayerInput from './components/PlayerInput.jsx'
 import GameTypeSelector from './components/GameTypeSelector.jsx'
@@ -9,9 +9,13 @@ import PlayersPage from './components/PlayersPage.jsx'
 import WinnersPage from './components/WinnersPage.jsx'
 import ScoreChart from './components/ScoreChart.jsx'
 import GameAnalytics from './components/GameAnalytics.jsx'
+import WinProbability from './components/WinProbability.jsx'
 import { supabase } from './lib/supabase.js'
 import confetti from 'canvas-confetti'
+import { playRoundEnd, playBigPenalty, playGameWin, playRematch } from './utils/sounds.js'
 import './styles/main.css'
+
+export const PLAYER_COLORS = ['#2563eb', '#059669', '#dc2626', '#d97706']
 
 function App() {
   const [state, dispatch] = useReducer(
@@ -45,6 +49,20 @@ function App() {
   const [preselectedTypeCode, setPreselectedTypeCode] = useState(null)
   const [view, setView] = useState('home')
   const [saving, setSaving] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('king-sound') !== 'off')
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('king-theme') === 'dark')
+  const lastPlayersRef = useRef(null)
+
+  // Apply dark mode class to body
+  useEffect(() => {
+    document.body.classList.toggle('dark', darkMode)
+    localStorage.setItem('king-theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
+  // Persist sound preference
+  useEffect(() => {
+    localStorage.setItem('king-sound', soundEnabled ? 'on' : 'off')
+  }, [soundEnabled])
 
   // Load from localStorage on first mount
   useEffect(() => {
@@ -53,7 +71,6 @@ function App() {
       if (saved) {
         const parsed = JSON.parse(saved)
         if (parsed && Array.isArray(parsed.rounds) && (parsed.players === null || Array.isArray(parsed.players))) {
-          // Guard against old p1/p2/p3 style ids (pre-Supabase migration)
           const hasLegacyIds = Array.isArray(parsed.players) && parsed.players.some((p) => /^p\d+$/.test(p.id))
           if (!hasLegacyIds) {
             dispatch({ type: 'HYDRATE', payload: { players: parsed.players, activePlayerIndex: parsed.activePlayerIndex || 0, rounds: parsed.rounds } })
@@ -62,9 +79,7 @@ function App() {
           }
         }
       }
-    } catch (e) {
-      // ignore corrupted storage
-    }
+    } catch (e) {}
     setHydrated(true)
   }, [])
 
@@ -74,12 +89,9 @@ function App() {
     const snapshot = { players, activePlayerIndex, rounds }
     try {
       localStorage.setItem('king-score-state', JSON.stringify(snapshot))
-    } catch (e) {
-      // storage may be full or blocked; fail silently
-    }
+    } catch (e) {}
   }, [players, activePlayerIndex, rounds, hydrated])
 
-  // track used game types per player
   const usedTypesByPlayer = useMemo(() => {
     const map = {}
     if (!players) return map
@@ -112,26 +124,22 @@ function App() {
   useEffect(() => {
     if (!gameFinished) return
     confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } })
+    if (soundEnabled) playGameWin()
   }, [gameFinished])
 
-  const handleComplete = useCallback(async () => {
-    if (!players) return
-    setSaving(true)
-
+  const saveGameToDB = useCallback(async (playersList, roundsList) => {
     const totals = {}
-    players.forEach((p) => (totals[p.id] = 0))
-    rounds.forEach((r) => {
-      if (r.scores) players.forEach((p) => {
+    playersList.forEach((p) => (totals[p.id] = 0))
+    roundsList.forEach((r) => {
+      if (r.scores) playersList.forEach((p) => {
         totals[p.id] = (totals[p.id] || 0) + (r.scores[p.id] || 0)
       })
     })
-
-    const winner = players.reduce(
+    const winner = playersList.reduce(
       (best, p) => (!best || totals[p.id] > totals[best.id] ? p : best),
       null
     )
-
-    const participants = players.map((p) => ({ name: p.name, score: totals[p.id] }))
+    const participants = playersList.map((p) => ({ name: p.name, score: totals[p.id] }))
 
     const { data: resultData } = await supabase
       .from('game_results')
@@ -142,15 +150,32 @@ function App() {
     if (resultData?.id) {
       await supabase.from('game_details').insert({
         game_result_id: resultData.id,
-        players,
-        rounds,
+        players: playersList,
+        rounds: roundsList,
       })
     }
+  }, [])
 
+  const handleComplete = useCallback(async () => {
+    if (!players) return
+    setSaving(true)
+    lastPlayersRef.current = players
+    await saveGameToDB(players, rounds)
     setSaving(false)
     localStorage.removeItem('king-score-state')
     dispatch({ type: 'RESET' })
-  }, [players, rounds])
+  }, [players, rounds, saveGameToDB])
+
+  const handleRematch = useCallback(async () => {
+    if (!players) return
+    setSaving(true)
+    const rematchers = [...players]
+    await saveGameToDB(players, rounds)
+    setSaving(false)
+    localStorage.removeItem('king-score-state')
+    if (soundEnabled) playRematch()
+    dispatch({ type: 'START', players: rematchers })
+  }, [players, rounds, saveGameToDB, soundEnabled])
 
   const handleStart = useCallback((playersList) => {
     dispatch({ type: 'START', players: playersList })
@@ -159,7 +184,15 @@ function App() {
   const onRoundComplete = useCallback((roundRecord) => {
     dispatch({ type: 'END_ROUND', round: roundRecord })
     setPreselectedTypeCode(null)
-  }, [])
+    if (soundEnabled) {
+      const minScore = Math.min(...Object.values(roundRecord.scores || {}))
+      if (minScore <= -40) {
+        playBigPenalty()
+      } else {
+        playRoundEnd()
+      }
+    }
+  }, [soundEnabled])
 
   const onEditLastRound = useCallback((patch) => {
     if (!players || rounds.length === 0) return
@@ -183,6 +216,20 @@ function App() {
         <div className="nav-actions">
           <button className="link" onClick={() => setView('players')}>Players</button>
           <button className="link" onClick={() => setView('winners')}>History</button>
+          <button
+            className="link"
+            onClick={() => setSoundEnabled(v => !v)}
+            title={soundEnabled ? 'Sound on' : 'Sound off'}
+          >
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
+          <button
+            className="link"
+            onClick={() => setDarkMode(v => !v)}
+            title={darkMode ? 'Light mode' : 'Dark mode'}
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
           <button
             className="primary"
             onClick={() => {
@@ -217,6 +264,7 @@ function App() {
             usedTypesByPlayer={usedTypesByPlayer}
             activePlayerIndex={activePlayerIndex}
             onPreselect={(code) => setPreselectedTypeCode(code)}
+            playerColors={PLAYER_COLORS}
           />
           <GameTypeSelector
             players={players}
@@ -225,8 +273,13 @@ function App() {
             preselectedCode={preselectedTypeCode}
             onRoundComplete={onRoundComplete}
           />
-          <ScoreTable players={players} rounds={rounds} onEditLastRound={onEditLastRound} />
-
+          <ScoreTable
+            players={players}
+            rounds={rounds}
+            onEditLastRound={onEditLastRound}
+            playerColors={PLAYER_COLORS}
+          />
+          <WinProbability players={players} rounds={rounds} playerColors={PLAYER_COLORS} />
           <div className="meta">
             <div>Round {rounds.length + 1} / {targetRoundsCount}</div>
             <div>Leader: {players[activePlayerIndex].name}</div>
@@ -236,10 +289,13 @@ function App() {
 
       {view === 'home' && players && gameFinished && (
         <>
-          <ScoreTable players={players} rounds={rounds} gameFinished />
+          <ScoreTable players={players} rounds={rounds} gameFinished playerColors={PLAYER_COLORS} />
           <div className="actions center">
             <button className="primary" disabled={saving} onClick={handleComplete}>
               {saving ? 'Saving...' : 'Complete'}
+            </button>
+            <button className="primary" disabled={saving} onClick={handleRematch} style={{ background: '#059669', borderColor: '#059669' }}>
+              {saving ? '...' : '🔁 Rematch'}
             </button>
             <button className="link" disabled={saving} onClick={handleComplete}>
               New Game

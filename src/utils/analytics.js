@@ -113,6 +113,61 @@ export function computeGlobalStats(allDetails, allResults) {
   return map
 }
 
+// Returns { [leaderName]: { [targetName]: count } } — how many times leader sent King to target
+export function computeKingMatrix(allDetails) {
+  const matrix = {}
+  allDetails.forEach(detail => {
+    const { players, rounds } = detail
+    if (!players || !rounds) return
+    const nameById = {}
+    players.forEach(p => { nameById[p.id] = p.name })
+    rounds.forEach(round => {
+      if (round.gameTypeCode !== 'K') return
+      const leaderName = nameById[round.leaderPlayerId]
+      const targetName = nameById[round.singleTargetPlayerId]
+      if (!leaderName || !targetName) return
+      if (!matrix[leaderName]) matrix[leaderName] = {}
+      matrix[leaderName][targetName] = (matrix[leaderName][targetName] || 0) + 1
+    })
+  })
+  return matrix
+}
+
+// Returns { [playerName]: { [typeCode]: avgScorePerGame } }
+export function computeTypeEfficiency(allDetails) {
+  const playerGames = {}   // { name: { typeCode: [scores] } }
+  allDetails.forEach(detail => {
+    const { players, rounds } = detail
+    if (!players || !rounds) return
+    const nameById = {}
+    players.forEach(p => { nameById[p.id] = p.name })
+    players.forEach(p => {
+      const name = p.name
+      if (!playerGames[name]) {
+        playerGames[name] = { K: [], Q: [], J: [], H: [], L2: [], T: [], P1: [], P2: [], P3: [] }
+      }
+    })
+    rounds.forEach(round => {
+      const code = round.gameTypeCode
+      if (!round.scores) return
+      players.forEach(p => {
+        const name = nameById[p.id]
+        if (name && playerGames[name] && code in playerGames[name]) {
+          playerGames[name][code].push(round.scores[p.id] || 0)
+        }
+      })
+    })
+  })
+  const result = {}
+  Object.entries(playerGames).forEach(([name, typeSets]) => {
+    result[name] = {}
+    Object.entries(typeSets).forEach(([code, scores]) => {
+      result[name][code] = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null
+    })
+  })
+  return result
+}
+
 export function getGlobalAwards(playerMap) {
   const players = Object.values(playerMap)
   if (!players.length) return []
