@@ -8,6 +8,7 @@ import GameTypeMatrix from './components/GameTypeMatrix.jsx'
 import PlayersPage from './components/PlayersPage.jsx'
 import WinnersPage from './components/WinnersPage.jsx'
 import ScoreChart from './components/ScoreChart.jsx'
+import GameAnalytics from './components/GameAnalytics.jsx'
 import { supabase } from './lib/supabase.js'
 import confetti from 'canvas-confetti'
 import './styles/main.css'
@@ -98,6 +99,16 @@ function App() {
 
   const gameFinished = !!(players && rounds.length >= targetRoundsCount && targetRoundsCount > 0)
 
+  const finishedParticipants = useMemo(() => {
+    if (!gameFinished || !players) return []
+    const totals = {}
+    players.forEach(p => { totals[p.id] = 0 })
+    rounds.forEach(r => {
+      if (r.scores) players.forEach(p => { totals[p.id] += r.scores[p.id] || 0 })
+    })
+    return players.map(p => ({ name: p.name, score: totals[p.id] }))
+  }, [gameFinished, players, rounds])
+
   useEffect(() => {
     if (!gameFinished) return
     confetti({ particleCount: 180, spread: 90, origin: { y: 0.6 } })
@@ -122,10 +133,19 @@ function App() {
 
     const participants = players.map((p) => ({ name: p.name, score: totals[p.id] }))
 
-    await supabase.from('game_results').insert({
-      winner_name: winner.name,
-      participants,
-    })
+    const { data: resultData } = await supabase
+      .from('game_results')
+      .insert({ winner_name: winner.name, participants })
+      .select('id')
+      .single()
+
+    if (resultData?.id) {
+      await supabase.from('game_details').insert({
+        game_result_id: resultData.id,
+        players,
+        rounds,
+      })
+    }
 
     setSaving(false)
     localStorage.removeItem('king-score-state')
@@ -156,7 +176,7 @@ function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="brand">
+        <div className="brand" onClick={() => setView('home')} style={{ cursor: 'pointer' }}>
           <img className="logo" src="/12427687.png" alt="King Score logo" />
           <h1>King</h1>
         </div>
@@ -226,6 +246,7 @@ function App() {
             </button>
           </div>
           <ScoreChart players={players} rounds={rounds} />
+          <GameAnalytics players={players} rounds={rounds} participants={finishedParticipants} />
         </>
       )}
     </div>

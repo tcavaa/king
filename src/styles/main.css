@@ -107,8 +107,49 @@ button, input, select { min-height: 44px; }
 .player-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .player-list-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #fff8ec; border: 2px solid var(--line); border-radius: 8px; }
 
-/* Winners table: 3-column layout */
+/* Winners table: 3-column layout (legacy) */
 .winners-tr { grid-template-columns: 1.2fr 1fr 2fr; }
+
+/* History table: date | winner | players | details button */
+.history-tr { grid-template-columns: 1fr 1fr 2.5fr 70px; }
+
+/* Analytics card-collection table — player count via --ac */
+.analytics-tr { grid-template-columns: 1.5fr repeat(var(--ac, 3), 1fr); }
+.analytics-max { color: var(--primary); }
+.analytics-zero { color: var(--muted); }
+
+/* Global analytics summary table */
+.summary-tr { grid-template-columns: 130px 70px 62px 62px 88px repeat(7, 50px); min-width: 780px; }
+.summary-tr .th, .summary-tr .td { padding: 8px 6px; font-size: 11px; }
+
+/* Awards grid */
+.awards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 12px; margin-top: 8px; }
+.award-card { background: #fff8ec; border: 2px solid var(--line); border-radius: 10px; padding: 14px 10px; text-align: center; }
+.award-icon { font-size: 26px; margin-bottom: 6px; }
+.award-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.award-player { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+.award-value { font-size: 12px; color: var(--muted); }
+
+/* Category Leaderboard */
+.leaderboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 8px; }
+.leaderboard-card { background: #fff8ec; border: 2px solid var(--line); border-radius: 8px; padding: 10px; }
+.leaderboard-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: var(--primary); margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.leaderboard-row { display: flex; align-items: center; gap: 5px; padding: 3px 0; font-size: 12px; }
+.leaderboard-row.leader { font-weight: 700; color: var(--primary); }
+.lb-rank { color: var(--muted); font-size: 11px; width: 14px; flex-shrink: 0; }
+.lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-val { font-weight: 600; }
+
+/* Per-player breakdown cards in global analytics */
+.player-breakdown-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-top: 8px; }
+.player-breakdown-card { border: 2px solid var(--line); border-radius: 10px; overflow: hidden; }
+.pb-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; color: #fff; }
+.pb-name { font-size: 15px; font-weight: 700; }
+.pb-record { font-size: 12px; opacity: 0.85; }
+.pb-body { padding: 10px 12px; background: #fff8ec; display: flex; flex-direction: column; gap: 5px; }
+.pb-stat { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.pb-stat span { color: var(--muted); }
+.pb-stat strong { font-weight: 600; }
 
 /* Player stats in Players page */
 .player-info { display: flex; flex-direction: column; gap: 3px; }
