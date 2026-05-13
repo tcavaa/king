@@ -136,6 +136,7 @@ button, input, select { min-height: 44px; }
 .matrix-header, .matrix-row { display: grid; grid-template-columns: 0.8fr repeat(var(--player-count, 4), 1fr); gap: 6px; }
 .matrix .cell { padding: 8px; background: var(--cell-bg); border: 2px solid var(--line); border-radius: 6px; text-align: center; }
 .matrix .type-col { font-weight: 700; text-align: left; }
+.matrix button.player-col { font-size: 22px; line-height: 1; font-weight: 700; min-height: 40px; }
 .matrix .player-col.active { outline: 2px solid var(--primary); }
 .matrix .player-col.used { color: var(--accent-bad); }
 .matrix .player-col.available { color: var(--accent-good); }
@@ -247,6 +248,20 @@ button, input, select { min-height: 44px; }
 .win-prob-track { flex: 1; height: 12px; background: var(--line); border-radius: 6px; overflow: hidden; }
 .win-prob-fill { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
 .win-prob-pct { width: 36px; font-size: 13px; font-weight: 600; text-align: right; flex-shrink: 0; }
+
+/* ===== NEW: Game Progress ring ===== */
+.game-progress-card { text-align: center; }
+.game-progress-ring-wrap { position: relative; display: inline-block; margin: 4px auto 0; }
+.game-progress-ring { display: block; }
+.game-progress-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.game-progress-fraction { font-size: 22px; font-weight: 700; color: var(--text); }
+.game-progress-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+.game-progress-footer { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.game-progress-remaining-label { font-size: 13px; color: var(--muted); }
+.game-progress-remaining-value { font-size: 14px; font-weight: 600; color: var(--text); margin-top: 2px; }
 
 /* ===== NEW: King targeting matrix ===== */
 .king-matrix { font-size: 13px; margin-top: 8px; }

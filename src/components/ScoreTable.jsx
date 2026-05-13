@@ -101,10 +101,10 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
     return ''
   }, [isEditing, selectedType, draftSum, draftSingle])
 
-  // Danger zone: player more than 120pts behind leader (only after at least 1 round)
+  // Danger zone: player more than 190pts behind leader (only after at least 1 round)
   const dangerIds = new Set(
     rounds.length > 0
-      ? players.filter(p => maxTotal - totals[p.id] >= 120).map(p => p.id)
+      ? players.filter(p => maxTotal - totals[p.id] >= 190).map(p => p.id)
       : []
   )
 

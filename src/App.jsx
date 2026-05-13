@@ -10,6 +10,7 @@ import WinnersPage from './components/WinnersPage.jsx'
 import ScoreChart from './components/ScoreChart.jsx'
 import GameAnalytics from './components/GameAnalytics.jsx'
 import WinProbability from './components/WinProbability.jsx'
+import GameProgress from './components/GameProgress.jsx'
 import { supabase } from './lib/supabase.js'
 import confetti from 'canvas-confetti'
 import { playRoundEnd, playBigPenalty, playGameWin, playRematch } from './utils/sounds.js'
@@ -280,6 +281,7 @@ function App() {
             playerColors={PLAYER_COLORS}
           />
           <WinProbability players={players} rounds={rounds} playerColors={PLAYER_COLORS} />
+          <GameProgress playedRounds={rounds.length} totalRounds={targetRoundsCount} />
           <div className="meta">
             <div>Round {rounds.length + 1} / {targetRoundsCount}</div>
             <div>Leader: {players[activePlayerIndex].name}</div>
