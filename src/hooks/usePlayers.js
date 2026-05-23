@@ -10,7 +10,7 @@ export function usePlayers() {
     setLoading(true)
     const { data, error } = await supabase
       .from('players')
-      .select('id, name, created_at')
+      .select('id, name, online_name, created_at')
       .order('name')
     if (error) setError(error.message)
     else setPlayers(data)

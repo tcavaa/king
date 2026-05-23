@@ -1,0 +1,35 @@
+import { useState, useEffect } from 'react'
+
+const BASE = 'https://king.rretrocar.ge/api/public'
+
+export function useOnlineLeaderboard() {
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetch(`${BASE}/leaderboard`)
+      .then(r => r.json())
+      .then(setData)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [])
+
+  return { data, loading, error }
+}
+
+export function useOnlineGames(limit = 200) {
+  const [games, setGames] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetch(`${BASE}/games?limit=${limit}`)
+      .then(r => r.json())
+      .then(setGames)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [limit])
+
+  return { games, loading, error }
+}

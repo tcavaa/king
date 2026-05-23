@@ -4,6 +4,7 @@ import {
   Legend, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts'
 import { computeGlobalStats, getGlobalAwards, TYPE_ROWS, computeKingMatrix, computeTypeEfficiency } from '../utils/analytics'
+import { useOnlineLeaderboard } from '../hooks/useOnlineData'
 
 import { PLAYER_COLORS as COLORS } from '../App'
 const TYPE_CODES = ['K', 'Q', 'J', 'H', 'L2', 'T', 'P1', 'P2', 'P3']
@@ -12,14 +13,33 @@ function getCssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
-export default function GlobalAnalyticsPage({ details, results, onBack }) {
+export default function GlobalAnalyticsPage({ details, results, supabasePlayers = [], onBack }) {
   const playerMap = useMemo(() => computeGlobalStats(details, results), [details, results])
+  const { data: onlineLeaderboard } = useOnlineLeaderboard()
+
+  // online_name keyed map: online display name → leaderboard entry
+  const onlineMap = useMemo(() => {
+    const m = {}
+    onlineLeaderboard.forEach(p => { m[p.name] = p })
+    return m
+  }, [onlineLeaderboard])
+
+  // UUID → online_name from the players table (set manually in Supabase dashboard)
+  const uuidToOnlineName = useMemo(() => {
+    const m = {}
+    supabasePlayers.forEach(p => { if (p.online_name) m[p.id] = p.online_name })
+    return m
+  }, [supabasePlayers])
   const awards = useMemo(() => getGlobalAwards(playerMap), [playerMap])
   const players = useMemo(
     () => Object.entries(playerMap)
       .map(([id, data]) => ({ id, ...data }))
-      .sort((a, b) => b.gamesPlayed - a.gamesPlayed),
-    [playerMap]
+      .sort((a, b) => {
+        const aWins = a.wins + (onlineMap[uuidToOnlineName[a.id]]?.wins ?? 0)
+        const bWins = b.wins + (onlineMap[uuidToOnlineName[b.id]]?.wins ?? 0)
+        return bWins - aWins
+      }),
+    [playerMap, onlineMap, uuidToOnlineName]
   )
   const kingMatrix = useMemo(() => computeKingMatrix(details), [details])
   const typeEfficiency = useMemo(() => computeTypeEfficiency(details), [details])
@@ -90,6 +110,9 @@ export default function GlobalAnalyticsPage({ details, results, onBack }) {
               <div className="th center">Games</div>
               <div className="th center">Wins</div>
               <div className="th center">Win%</div>
+              <div className="th center online-col">🌐 Games</div>
+              <div className="th center online-col">🌐 Wins</div>
+              <div className="th center online-col">All Wins</div>
               <div className="th center">Avg Score</div>
               <div className="th center">♛ Q</div>
               <div className="th center">🃏 J</div>
@@ -105,12 +128,16 @@ export default function GlobalAnalyticsPage({ details, results, onBack }) {
               const winPct = p.gamesPlayed > 0 ? ((p.wins / p.gamesPlayed) * 100).toFixed(0) : 0
               const avgScore = p.gamesPlayed > 0 ? (p.totalScore / p.gamesPlayed).toFixed(1) : '0'
               const plusTotal = p.P1 + p.P2 + p.P3
+              const online = onlineMap[uuidToOnlineName[p.id]]
               return (
                 <div key={p.id} className="tr summary-tr">
                   <div className="td bold">{p.name}</div>
                   <div className="td center">{p.gamesPlayed}</div>
                   <div className="td center">{p.wins}</div>
                   <div className="td center">{winPct}%</div>
+                  <div className="td center online-col">{online ? online.gamesPlayed : '—'}</div>
+                  <div className="td center online-col">{online ? online.wins : '—'}</div>
+                  <div className="td center online-col bold">{p.wins + (online?.wins ?? 0)}</div>
                   <div className={`td center ${+avgScore > 0 ? 'pos' : +avgScore < 0 ? 'neg' : ''}`}>{avgScore}</div>
                   <div className="td center">{p.Q}</div>
                   <div className="td center">{p.J}</div>

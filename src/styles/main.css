@@ -175,8 +175,10 @@ button, input, select { min-height: 44px; }
 .analytics-zero { color: var(--muted); }
 
 /* Global analytics summary table */
-.summary-tr { grid-template-columns: 130px 70px 62px 62px 88px repeat(7, 50px); min-width: 780px; }
+.summary-tr { grid-template-columns: 130px 70px 62px 62px 62px 62px 68px 88px repeat(7, 50px); min-width: 960px; }
 .summary-tr .th, .summary-tr .td { padding: 8px 6px; font-size: 11px; }
+.online-col { background: rgba(34, 197, 94, 0.06); border-left: 1px solid var(--line); }
+body.dark .online-col { background: rgba(34, 197, 94, 0.04); }
 
 /* Awards grid */
 .awards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 12px; margin-top: 8px; }
