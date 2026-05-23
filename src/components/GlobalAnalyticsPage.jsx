@@ -107,12 +107,15 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
           <div className="thead">
             <div className="tr summary-tr">
               <div className="th">Player</div>
+              <div className="th center online-col">All Wins</div>
               <div className="th center">Games</div>
               <div className="th center">Wins</div>
-              <div className="th center">Win%</div>
               <div className="th center online-col">🌐 Games</div>
               <div className="th center online-col">🌐 Wins</div>
-              <div className="th center online-col">All Wins</div>
+              <div className="th center online-col">Total Games</div>
+              <div className="th center">Win%</div>
+              <div className="th center online-col">🌐 Win%</div>
+              <div className="th center online-col">Total%</div>
               <div className="th center">Avg Score</div>
               <div className="th center">♛ Q</div>
               <div className="th center">🃏 J</div>
@@ -125,19 +128,26 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
           </div>
           <div className="tbody">
             {players.map(p => {
-              const winPct = p.gamesPlayed > 0 ? ((p.wins / p.gamesPlayed) * 100).toFixed(0) : 0
               const avgScore = p.gamesPlayed > 0 ? (p.totalScore / p.gamesPlayed).toFixed(1) : '0'
               const plusTotal = p.P1 + p.P2 + p.P3
               const online = onlineMap[uuidToOnlineName[p.id]]
+              const allWins    = p.wins + (online?.wins ?? 0)
+              const totalGames = p.gamesPlayed + (online?.gamesPlayed ?? 0)
+              const winPct        = p.gamesPlayed > 0 ? ((p.wins / p.gamesPlayed) * 100).toFixed(0) : '—'
+              const onlineWinPct  = online?.gamesPlayed > 0 ? ((online.wins / online.gamesPlayed) * 100).toFixed(0) : '—'
+              const totalWinPct   = totalGames > 0 ? ((allWins / totalGames) * 100).toFixed(0) : '—'
               return (
                 <div key={p.id} className="tr summary-tr">
                   <div className="td bold">{p.name}</div>
+                  <div className="td center online-col bold">{allWins}</div>
                   <div className="td center">{p.gamesPlayed}</div>
                   <div className="td center">{p.wins}</div>
-                  <div className="td center">{winPct}%</div>
                   <div className="td center online-col">{online ? online.gamesPlayed : '—'}</div>
                   <div className="td center online-col">{online ? online.wins : '—'}</div>
-                  <div className="td center online-col bold">{p.wins + (online?.wins ?? 0)}</div>
+                  <div className="td center online-col">{totalGames}</div>
+                  <div className="td center">{winPct}{winPct !== '—' ? '%' : ''}</div>
+                  <div className="td center online-col">{onlineWinPct}{onlineWinPct !== '—' ? '%' : ''}</div>
+                  <div className="td center online-col bold">{totalWinPct}{totalWinPct !== '—' ? '%' : ''}</div>
                   <div className={`td center ${+avgScore > 0 ? 'pos' : +avgScore < 0 ? 'neg' : ''}`}>{avgScore}</div>
                   <div className="td center">{p.Q}</div>
                   <div className="td center">{p.J}</div>
