@@ -1,6 +1,7 @@
 import { GAME_TYPES } from '../constants/gameTypes'
+import TrophyIcon from './TrophyIcon'
 
-export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlayerIndex, onPreselect, playerColors = [] }) {
+export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlayerIndex, onPreselect, playerColors = [], currentChampion }) {
   return (
     <div className="card matrix">
       <h2>Game Types Availability</h2>
@@ -12,7 +13,12 @@ export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlaye
               key={p.id}
               className={`cell player-col ${idx === activePlayerIndex ? 'active' : ''}`}
               style={{ borderBottom: playerColors[idx] ? `3px solid ${playerColors[idx]}` : undefined }}
-            >{p.name}</div>
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {p.name}
+                {currentChampion === p.name && <TrophyIcon size={16} color="#d4a017" />}
+              </span>
+            </div>
           ))}
         </div>
         {GAME_TYPES.map((t) => (

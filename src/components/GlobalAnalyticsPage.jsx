@@ -4,7 +4,6 @@ import {
   Legend, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts'
 import { computeGlobalStats, getGlobalAwards, TYPE_ROWS, computeKingMatrix, computeTypeEfficiency } from '../utils/analytics'
-import { useOnlineLeaderboard } from '../hooks/useOnlineData'
 
 import { PLAYER_COLORS as COLORS } from '../App'
 const TYPE_CODES = ['K', 'Q', 'J', 'H', 'L2', 'T', 'P1', 'P2', 'P3']
@@ -13,16 +12,23 @@ function getCssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
-export default function GlobalAnalyticsPage({ details, results, supabasePlayers = [], onBack }) {
+// onlineGames: season-filtered array from WinnersPage (already sliced to current season)
+export default function GlobalAnalyticsPage({ details, results, supabasePlayers = [], onlineGames = [], onBack }) {
   const playerMap = useMemo(() => computeGlobalStats(details, results), [details, results])
-  const { data: onlineLeaderboard } = useOnlineLeaderboard()
 
-  // online_name keyed map: online display name → leaderboard entry
+  // Compute per-player online stats from the (season-filtered) game list
   const onlineMap = useMemo(() => {
     const m = {}
-    onlineLeaderboard.forEach(p => { m[p.name] = p })
+    onlineGames.forEach(g => {
+      ;(g.players || []).forEach(p => {
+        if (!m[p.name]) m[p.name] = { gamesPlayed: 0, wins: 0, totalScore: 0 }
+        m[p.name].gamesPlayed++
+        m[p.name].totalScore += p.score ?? 0
+        if (g.winner?.name === p.name) m[p.name].wins++
+      })
+    })
     return m
-  }, [onlineLeaderboard])
+  }, [onlineGames])
 
   // UUID → online_name from the players table (set manually in Supabase dashboard)
   const uuidToOnlineName = useMemo(() => {

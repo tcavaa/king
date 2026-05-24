@@ -12,6 +12,7 @@ import GameAnalytics from './components/GameAnalytics.jsx'
 import WinProbability from './components/WinProbability.jsx'
 import GameProgress from './components/GameProgress.jsx'
 import { supabase } from './lib/supabase.js'
+import { useSeasons } from './hooks/useSeasons'
 import confetti from 'canvas-confetti'
 import { playRoundEnd, playBigPenalty, playGameWin, playRematch } from './utils/sounds.js'
 import './styles/main.css'
@@ -52,6 +53,7 @@ function App() {
   const [saving, setSaving] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('king-sound') !== 'off')
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('king-theme') === 'dark')
+  const { seasons, currentChampion, currentSeasonStart, addSeason } = useSeasons()
   const lastPlayersRef = useRef(null)
 
   // Apply dark mode class to body
@@ -247,11 +249,16 @@ function App() {
       </header>
 
       {view === 'players' && (
-        <PlayersPage onBack={() => setView('home')} />
+        <PlayersPage onBack={() => setView('home')} currentChampion={currentChampion} />
       )}
 
       {view === 'winners' && (
-        <WinnersPage onBack={() => setView('home')} />
+        <WinnersPage
+          onBack={() => setView('home')}
+          seasons={seasons}
+          currentSeasonStart={currentSeasonStart}
+          addSeason={addSeason}
+        />
       )}
 
       {view === 'home' && !players && (
@@ -266,6 +273,7 @@ function App() {
             activePlayerIndex={activePlayerIndex}
             onPreselect={(code) => setPreselectedTypeCode(code)}
             playerColors={PLAYER_COLORS}
+            currentChampion={currentChampion}
           />
           <GameTypeSelector
             players={players}
@@ -279,6 +287,7 @@ function App() {
             rounds={rounds}
             onEditLastRound={onEditLastRound}
             playerColors={PLAYER_COLORS}
+            currentChampion={currentChampion}
           />
           <WinProbability players={players} rounds={rounds} playerColors={PLAYER_COLORS} />
           <GameProgress playedRounds={rounds.length} totalRounds={targetRoundsCount} />
@@ -291,7 +300,7 @@ function App() {
 
       {view === 'home' && players && gameFinished && (
         <>
-          <ScoreTable players={players} rounds={rounds} gameFinished playerColors={PLAYER_COLORS} />
+          <ScoreTable players={players} rounds={rounds} gameFinished playerColors={PLAYER_COLORS} currentChampion={currentChampion} />
           <div className="actions center">
             <button className="primary" disabled={saving} onClick={handleComplete}>
               {saving ? 'Saving...' : 'Complete'}

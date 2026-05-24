@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { GAME_TYPES } from '../constants/gameTypes'
+import TrophyIcon from './TrophyIcon'
 
 function AnimatedScore({ value, from = 0, showSign = true }) {
   const [displayed, setDisplayed] = useState(from)
@@ -25,7 +26,7 @@ function AnimatedScore({ value, from = 0, showSign = true }) {
   return <span className="score-animated">{showSign && displayed > 0 ? `+${displayed}` : displayed}</span>
 }
 
-export default function ScoreTable({ players, rounds, onEditLastRound, gameFinished, playerColors = [] }) {
+export default function ScoreTable({ players, rounds, onEditLastRound, gameFinished, playerColors = [], currentChampion }) {
   const totals = players.reduce((acc, p) => { acc[p.id] = 0; return acc }, {})
   rounds.forEach((r) => {
     Object.entries(r.scores).forEach(([pid, score]) => { totals[pid] += score })
@@ -124,7 +125,10 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
                 <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2, minHeight: 14 }}>
                   {leaders.has(p.id) ? (isTie ? '🤝' : '👑') : ''}
                 </div>
-                {p.name}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {p.name}
+                  {currentChampion === p.name && <TrophyIcon size={16} color="#d4a017" />}
+                </span>
               </div>
             ))}
           </div>

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { usePlayers } from '../hooks/usePlayers'
 import { useGameResults } from '../hooks/useGameResults'
+import TrophyIcon from './TrophyIcon'
 
-export default function PlayersPage({ onBack }) {
+export default function PlayersPage({ onBack, currentChampion }) {
   const { players, loading, addPlayer, deletePlayer } = usePlayers()
   const { results, loading: resultsLoading } = useGameResults()
   const [name, setName] = useState('')
@@ -63,7 +64,10 @@ export default function PlayersPage({ onBack }) {
             return (
               <li key={p.id} className="player-list-item">
                 <div className="player-info">
-                  <span className="player-name-label">{p.name}</span>
+                  <span className="player-name-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    {p.name}
+                    {currentChampion === p.name && <TrophyIcon size={16} color="#d4a017" />}
+                  </span>
                   {s && s.games > 0 ? (
                     <span className="player-stats">
                       {s.games} games · {s.wins} wins · {winRate}% win rate · avg {avgScore > 0 ? '+' : ''}{avgScore}
