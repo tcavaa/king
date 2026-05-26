@@ -49,6 +49,7 @@ export default function PinModal({ onSuccess, onCancel, title = 'Enter PIN' }) {
               type="password"
               inputMode="numeric"
               maxLength={1}
+              autoComplete="off"
               value={d}
               onChange={e => handleKey(i, e)}
               onKeyDown={e => handleKeyDown(i, e)}
