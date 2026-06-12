@@ -4,7 +4,8 @@ import {
   Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { computeGameStats, computeScoresByType, getGameAwards, TYPE_ROWS } from '../utils/analytics'
-
+import { computePerGameAchievements } from '../utils/achievements'
+import AchievementBadges from './AchievementBadges'
 import { PLAYER_COLORS as COLORS } from '../App'
 
 function getCssVar(name) {
@@ -15,6 +16,20 @@ export default function GameAnalytics({ players, rounds, participants }) {
   const stats = useMemo(() => computeGameStats(players, rounds), [players, rounds])
   const scoresByType = useMemo(() => computeScoresByType(players, rounds), [players, rounds])
   const awards = useMemo(() => getGameAwards(players, stats, participants), [players, stats, participants])
+  const perGameAchievements = useMemo(() => computePerGameAchievements(players, rounds), [players, rounds])
+
+  const playerAchievementMaps = useMemo(() => {
+    const maps = {}
+    players.forEach(p => {
+      const codes = perGameAchievements[p.id] || []
+      if (!codes.length) return
+      maps[p.id] = codes.reduce((acc, code) => {
+        acc[code] = (acc[code] || 0) + 1
+        return acc
+      }, {})
+    })
+    return maps
+  }, [players, perGameAchievements])
 
   // Bar chart: score contribution per game type per player (only non-zero types)
   const barData = useMemo(() => {
@@ -114,6 +129,25 @@ export default function GameAnalytics({ players, rounds, participants }) {
           )}
         </div>
       </div>
+
+      {/* Per-game Achievements */}
+      {Object.keys(playerAchievementMaps).length > 0 && (
+        <div className="card">
+          <h2>Achievements</h2>
+          <div className="game-achievements-grid">
+            {players.map(p => {
+              const achs = playerAchievementMaps[p.id]
+              if (!achs) return null
+              return (
+                <div key={p.id} className="game-achievements-player">
+                  <div className="game-achievements-player-name">{p.name}</div>
+                  <AchievementBadges achievements={achs} />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </>
   )
 }
