@@ -75,13 +75,17 @@ export function computePerGameAchievements(players, rounds) {
     }
 
     if (NEGATIVE_CODES.has(code) && leaderPlayerId && negLed[leaderPlayerId]) {
-      negLed[leaderPlayerId].led++
       const type = GAME_TYPES.find(t => t.code === code)
-      if (type) {
-        const clean = type.kind === 'single'
-          ? singleTargetPlayerId !== leaderPlayerId
-          : (countsByPlayerId?.[leaderPlayerId] || 0) === 0
-        if (clean) negLed[leaderPlayerId].clean++
+      if (!type) return
+
+      if (type.kind === 'single') {
+        if (singleTargetPlayerId == null) return  // skip rounds with no recorded target
+        negLed[leaderPlayerId].led++
+        if (singleTargetPlayerId !== leaderPlayerId) negLed[leaderPlayerId].clean++
+      } else {
+        if (countsByPlayerId == null) return  // skip rounds with no recorded counts
+        negLed[leaderPlayerId].led++
+        if ((countsByPlayerId[leaderPlayerId] || 0) === 0) negLed[leaderPlayerId].clean++
       }
     }
   })
@@ -96,7 +100,7 @@ export function computePerGameAchievements(players, rounds) {
     if (pp.P1 && pp.P2 && pp.P3) result[p.id].push('PLUS_PERFECTIONIST')
 
     const nl = negLed[p.id]
-    if (nl.led > 0 && nl.led === nl.clean) result[p.id].push('UNTOUCHABLE')
+    if (nl.led === NEGATIVE_CODES.size && nl.clean === NEGATIVE_CODES.size) result[p.id].push('UNTOUCHABLE')
 
     if (neverBelow[p.id]) result[p.id].push('NEVER_BELOW_ZERO')
   })
