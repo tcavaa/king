@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
 import { usePlayers } from '../hooks/usePlayers'
 import { useGameResults } from '../hooks/useGameResults'
+import { useAllGameDetails } from '../hooks/useAllGameDetails'
 import TrophyIcon from './TrophyIcon'
+import AchievementBadges from './AchievementBadges'
+import { computeAllLifetimeAchievements } from '../utils/achievements'
 
 export default function PlayersPage({ onBack, currentChampion }) {
   const { players, loading, addPlayer, deletePlayer } = usePlayers()
   const { results, loading: resultsLoading } = useGameResults()
+  const { details: allDetails } = useAllGameDetails()
   const [name, setName] = useState('')
   const [err, setErr] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -24,6 +28,11 @@ export default function PlayersPage({ onBack, currentChampion }) {
     })
     return map
   }, [players, results])
+
+  const lifetimeAchievements = useMemo(
+    () => computeAllLifetimeAchievements(allDetails, results),
+    [allDetails, results]
+  )
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -75,8 +84,9 @@ export default function PlayersPage({ onBack, currentChampion }) {
                   ) : (
                     <span className="player-stats">No games yet</span>
                   )}
+                  <AchievementBadges achievements={lifetimeAchievements[p.name] || {}} />
                 </div>
-                <button className="link" style={{ color: '#dc2626' }} onClick={() => setConfirmDelete(p)}>Remove</button>
+                <button className="link" style={{ color: '#dc2626', alignSelf: 'flex-start', marginTop: 2 }} onClick={() => setConfirmDelete(p)}>Remove</button>
               </li>
             )
           })}
