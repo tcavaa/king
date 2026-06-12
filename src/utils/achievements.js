@@ -11,9 +11,16 @@ export const ACHIEVEMENT_DEFS = {
   GAMES_50:              { id: 'GAMES_50',              icon: '🎮', label: 'Dedicated',           desc: 'Played 50 games',                                     repeatable: false },
   GAMES_100:             { id: 'GAMES_100',             icon: '🕹️', label: 'Century',            desc: 'Played 100 games',                                    repeatable: false },
   GAMES_150:             { id: 'GAMES_150',             icon: '👑', label: 'Legend',              desc: 'Played 150 games',                                    repeatable: false },
+  GAMES_250:             { id: 'GAMES_250',             icon: '💫', label: 'Veteran',             desc: 'Played 250 games',                                    repeatable: false },
+  GAMES_500:             { id: 'GAMES_500',             icon: '🌟', label: 'Elite',               desc: 'Played 500 games',                                    repeatable: false },
+  GAMES_800:             { id: 'GAMES_800',             icon: '🏅', label: 'Master',              desc: 'Played 800 games',                                    repeatable: false },
+  GAMES_1000:            { id: 'GAMES_1000',            icon: '💠', label: 'Grandmaster',         desc: 'Played 1000 games',                                   repeatable: false },
   WINS_10:               { id: 'WINS_10',               icon: '🥉', label: '10 Wins',             desc: 'Won 10 games',                                        repeatable: false },
   WINS_25:               { id: 'WINS_25',               icon: '🥈', label: '25 Wins',             desc: 'Won 25 games',                                        repeatable: false },
   WINS_50:               { id: 'WINS_50',               icon: '🥇', label: '50 Wins',             desc: 'Won 50 games',                                        repeatable: false },
+  WINS_250:              { id: 'WINS_250',              icon: '🏆', label: '250 Wins',             desc: 'Won 250 games',                                       repeatable: false },
+  WINS_500:              { id: 'WINS_500',              icon: '👹', label: '500 Wins',             desc: 'Won 500 games',                                       repeatable: false },
+  WINS_1000:             { id: 'WINS_1000',             icon: '🐉', label: '1000 Wins',            desc: 'Won 1000 games',                                      repeatable: false },
   WIN_STREAK_3:          { id: 'WIN_STREAK_3',          icon: '⚡', label: '3 in a Row',          desc: 'Won 3 consecutive games',                             repeatable: false },
   WIN_STREAK_5:          { id: 'WIN_STREAK_5',          icon: '🌩️', label: '5 in a Row',         desc: 'Won 5 consecutive games',                             repeatable: false },
   WIN_STREAK_10:         { id: 'WIN_STREAK_10',         icon: '☄️', label: '10 in a Row',        desc: 'Won 10 consecutive games',                            repeatable: false },
@@ -149,12 +156,19 @@ export function computeAllLifetimeAchievements(allGameDetails, allResults) {
     const gamesPlayed = playerResults.length
     const wins = playerResults.filter(res => res.winner_name === name).length
 
-    if (gamesPlayed >= 50)  r['GAMES_50'] = 1
-    if (gamesPlayed >= 100) r['GAMES_100'] = 1
-    if (gamesPlayed >= 150) r['GAMES_150'] = 1
-    if (wins >= 10) r['WINS_10'] = 1
-    if (wins >= 25) r['WINS_25'] = 1
-    if (wins >= 50) r['WINS_50'] = 1
+    if (gamesPlayed >= 50)   r['GAMES_50'] = 1
+    if (gamesPlayed >= 100)  r['GAMES_100'] = 1
+    if (gamesPlayed >= 150)  r['GAMES_150'] = 1
+    if (gamesPlayed >= 250)  r['GAMES_250'] = 1
+    if (gamesPlayed >= 500)  r['GAMES_500'] = 1
+    if (gamesPlayed >= 800)  r['GAMES_800'] = 1
+    if (gamesPlayed >= 1000) r['GAMES_1000'] = 1
+    if (wins >= 10)   r['WINS_10'] = 1
+    if (wins >= 25)   r['WINS_25'] = 1
+    if (wins >= 50)   r['WINS_50'] = 1
+    if (wins >= 250)  r['WINS_250'] = 1
+    if (wins >= 500)  r['WINS_500'] = 1
+    if (wins >= 1000) r['WINS_1000'] = 1
 
     let maxStreak = 0
     let current = 0
