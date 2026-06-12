@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useGameResults } from '../hooks/useGameResults'
 import { useAllGameDetails } from '../hooks/useAllGameDetails'
 import { usePlayers } from '../hooks/usePlayers'
@@ -8,6 +8,7 @@ import GlobalAnalyticsPage from './GlobalAnalyticsPage'
 import OnlineHistoryTab from './OnlineHistoryTab'
 import SeasonChampionsTab from './SeasonChampionsTab'
 import PinModal from './PinModal'
+import { computePerGameAchievements, ACHIEVEMENT_DEFS } from '../utils/achievements'
 
 // Determine season champion from combined local + online wins since seasonStart.
 // Online names are mapped to local names via supabasePlayers.online_name.
@@ -49,6 +50,22 @@ export default function WinnersPage({ onBack, seasons, currentSeasonStart, addSe
   const [endMsg, setEndMsg]             = useState(null)        // { ok, text }
 
   const loading = resultsLoading || detailsLoading
+
+  // { [game_result_id]: { [playerName]: uniqueAchievementCodes[] } }
+  const gameAchievementsMap = useMemo(() => {
+    const map = {}
+    details.forEach(detail => {
+      if (!detail.players || !detail.rounds) return
+      const achs = computePerGameAchievements(detail.players, detail.rounds)
+      const byName = {}
+      detail.players.forEach(p => {
+        const codes = [...new Set(achs[p.id] || [])]
+        if (codes.length) byName[p.name] = codes
+      })
+      if (Object.keys(byName).length) map[detail.game_result_id] = byName
+    })
+    return map
+  }, [details])
 
   // Season-filtered data for Global Analytics
   const seasonStart = currentSeasonStart || new Date(0)
@@ -176,11 +193,33 @@ export default function WinnersPage({ onBack, seasons, currentSeasonStart, addSe
             <div className="tbody">
               {results.map(r => {
                 const hasDetail = details.some(d => d.game_result_id === r.id)
+                const rowAchs = gameAchievementsMap[r.id] || {}
+                const achEntries = Object.entries(rowAchs)
                 return (
                   <div key={r.id} className="tr history-tr">
                     <div className="td">{new Date(r.played_at).toLocaleDateString()}</div>
                     <div className="td bold">{r.winner_name}</div>
-                    <div className="td">{r.participants.map(p => `${p.name} (${p.score})`).join(', ')}</div>
+                    <div className="td">
+                      <div>{r.participants.map(p => `${p.name} (${p.score})`).join(', ')}</div>
+                      {achEntries.length > 0 && (
+                        <div className="history-ach-row">
+                          {achEntries.map(([name, codes]) => (
+                            <span key={name} className="history-ach-player">
+                              <span className="history-ach-name">{name}:</span>
+                              {codes.map(code => (
+                                <span
+                                  key={code}
+                                  className="history-ach-icon"
+                                  title={`${ACHIEVEMENT_DEFS[code]?.label}: ${ACHIEVEMENT_DEFS[code]?.desc}`}
+                                >
+                                  {ACHIEVEMENT_DEFS[code]?.icon}
+                                </span>
+                              ))}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="td center">
                       {hasDetail ? (
                         <button
