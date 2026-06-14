@@ -181,61 +181,54 @@ export default function WinnersPage({ onBack, seasons, currentSeasonStart, addSe
         ) : results.length === 0 ? (
           <p style={{ color: 'var(--muted)' }}>No games recorded yet.</p>
         ) : (
-          <div className="table">
-            <div className="thead">
-              <div className="tr history-tr">
-                <div className="th">Date</div>
-                <div className="th">Winner</div>
-                <div className="th">Players &amp; Scores</div>
-                <div className="th"></div>
-              </div>
-            </div>
-            <div className="tbody">
-              {results.map(r => {
-                const hasDetail = details.some(d => d.game_result_id === r.id)
-                const rowAchs = gameAchievementsMap[r.id] || {}
-                const achEntries = Object.entries(rowAchs)
-                return (
-                  <div key={r.id} className="tr history-tr">
-                    <div className="td">{new Date(r.played_at).toLocaleDateString()}</div>
-                    <div className="td bold">{r.winner_name}</div>
-                    <div className="td">
-                      <div>{r.participants.map(p => `${p.name} (${p.score})`).join(', ')}</div>
-                      {achEntries.length > 0 && (
-                        <div className="history-ach-row">
-                          {achEntries.map(([name, codes]) => (
-                            <span key={name} className="history-ach-player">
-                              <span className="history-ach-name">{name}:</span>
-                              {codes.map(code => (
-                                <span
-                                  key={code}
-                                  className="history-ach-icon"
-                                  title={`${ACHIEVEMENT_DEFS[code]?.label}: ${ACHIEVEMENT_DEFS[code]?.desc}`}
-                                >
-                                  {ACHIEVEMENT_DEFS[code]?.icon}
-                                </span>
-                              ))}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="td center">
-                      {hasDetail ? (
-                        <button
-                          onClick={() => { setSelectedResultId(r.id); setSubView('detail') }}
-                          style={{ background: 'none', border: 'none', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: 13, padding: 0 }}
-                        >
-                          Details
-                        </button>
-                      ) : (
-                        <span style={{ color: 'var(--muted)', fontSize: 12 }}>—</span>
-                      )}
-                    </div>
+          <div className="history-list">
+            {results.map(r => {
+              const hasDetail = details.some(d => d.game_result_id === r.id)
+              const playerAchs = gameAchievementsMap[r.id] || {}
+              const sorted = [...(r.participants || [])].sort((a, b) => b.score - a.score)
+              return (
+                <div key={r.id} className="history-card">
+                  <div className="history-card-top">
+                    <span className="history-date">
+                      {new Date(r.played_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                    {hasDetail ? (
+                      <button className="link history-details-btn" onClick={() => { setSelectedResultId(r.id); setSubView('detail') }}>
+                        Details →
+                      </button>
+                    ) : (
+                      <span style={{ color: 'var(--muted)', fontSize: 12 }}>No details</span>
+                    )}
                   </div>
-                )
-              })}
-            </div>
+                  <div className="history-winner">👑 {r.winner_name}</div>
+                  <div className="history-participants">
+                    {sorted.map((p, i) => {
+                      const codes = playerAchs[p.name] || []
+                      return (
+                        <div key={i} className={`history-participant ${p.name === r.winner_name ? 'is-winner' : ''}`}>
+                          <span className="history-participant-name">{p.name}</span>
+                          {codes.length > 0 && (
+                            <span className="history-participant-awards">
+                              {codes.map((code, j) => {
+                                const def = ACHIEVEMENT_DEFS[code]
+                                return def ? (
+                                  <span key={j} className="history-award-badge" title={`${def.label}: ${def.desc}`}>
+                                    {def.icon}
+                                  </span>
+                                ) : null
+                              })}
+                            </span>
+                          )}
+                          <span className={`history-participant-score ${p.score >= 0 ? 'pos' : 'neg'}`}>
+                            {p.score > 0 ? `+${p.score}` : p.score}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )
       )}
