@@ -26,7 +26,7 @@ function AnimatedScore({ value, from = 0, showSign = true }) {
   return <span className="score-animated">{showSign && displayed > 0 ? `+${displayed}` : displayed}</span>
 }
 
-export default function ScoreTable({ players, rounds, onEditLastRound, gameFinished, playerColors = [], currentChampion }) {
+export default function ScoreTable({ players, rounds, onEditLastRound, onUndoLastRound, gameFinished, playerColors = [], currentChampion }) {
   const totals = players.reduce((acc, p) => { acc[p.id] = 0; return acc }, {})
   rounds.forEach((r) => {
     Object.entries(r.scores).forEach(([pid, score]) => { totals[pid] += score })
@@ -144,7 +144,12 @@ export default function ScoreTable({ players, rounds, onEditLastRound, gameFinis
                   {isLast && (
                     <span className="edit-actions">
                       {!isEditing && (
-                        <button className="link" onClick={startEdit} title="Edit last round">✎ Edit</button>
+                        <>
+                          <button className="link" onClick={startEdit} title="Edit last round">✎ Edit</button>
+                          {onUndoLastRound && (
+                            <button className="link" onClick={onUndoLastRound} title="Undo last round" style={{ color: 'var(--muted)' }}>↩ Undo</button>
+                          )}
+                        </>
                       )}
                       {isEditing && (
                         <>

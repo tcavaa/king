@@ -38,6 +38,13 @@ function App() {
           next[next.length - 1] = action.round
           return { ...s, rounds: next }
         }
+        case 'UNDO_LAST': {
+          if (!s.rounds.length) return s
+          const prevLeader = s.players
+            ? (s.activePlayerIndex - 1 + s.players.length) % s.players.length
+            : 0
+          return { ...s, rounds: s.rounds.slice(0, -1), activePlayerIndex: prevLeader }
+        }
         case 'RESET':
           return { players: null, activePlayerIndex: 0, rounds: [] }
         default:
@@ -197,6 +204,11 @@ function App() {
     }
   }, [soundEnabled])
 
+  const onUndoLastRound = useCallback(() => {
+    if (!players || rounds.length === 0) return
+    dispatch({ type: 'UNDO_LAST' })
+  }, [players, rounds])
+
   const onEditLastRound = useCallback((patch) => {
     if (!players || rounds.length === 0) return
     const lastIdx = rounds.length - 1
@@ -286,6 +298,7 @@ function App() {
             players={players}
             rounds={rounds}
             onEditLastRound={onEditLastRound}
+            onUndoLastRound={onUndoLastRound}
             playerColors={PLAYER_COLORS}
             currentChampion={currentChampion}
           />
