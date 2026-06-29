@@ -99,7 +99,7 @@ export function computeGlobalStats(allDetails, allResults) {
 
     players.forEach(p => {
       if (!map[p.id]) {
-        map[p.id] = { name: p.name, gamesPlayed: 0, wins: 0, totalScore: 0, K: 0, Q: 0, J: 0, H: 0, L2: 0, T: 0, P1: 0, P2: 0, P3: 0 }
+        map[p.id] = { name: p.name, gamesPlayed: 0, wins: 0, seconds: 0, totalScore: 0, K: 0, Q: 0, J: 0, H: 0, L2: 0, T: 0, P1: 0, P2: 0, P3: 0 }
       }
       const m = map[p.id]
       m.gamesPlayed++
@@ -108,9 +108,92 @@ export function computeGlobalStats(allDetails, allResults) {
       const gs = gameStats[p.id] || {}
       ;['K','Q','J','H','L2','T','P1','P2','P3'].forEach(k => { m[k] += gs[k] || 0 })
     })
+
+    // Second place = the player with the 2nd-highest total score in this game
+    const ranking = players
+      .map(p => ({ id: p.id, score: totals[p.id] || 0 }))
+      .sort((a, b) => b.score - a.score)
+    if (ranking.length >= 2 && map[ranking[1].id]) map[ranking[1].id].seconds++
   })
 
   return map
+}
+
+// Head-to-head comparison restricted to games every selected player took part in.
+// `selected` = [{ id, name, onlineName }] (onlineName may be undefined).
+// Returns per-player wins/games/win% over shared games (local + online) plus a
+// pairwise matrix of who outscored whom.
+export function computeComparison(selected, allDetails, allResults = [], onlineGames = []) {
+  const ids = selected.map(s => s.id)
+
+  const stats = {}
+  selected.forEach(s => { stats[s.id] = { id: s.id, name: s.name, wins: 0, games: 0 } })
+
+  // h2h[a][b] = number of shared games where a outscored b
+  const h2h = {}
+  ids.forEach(a => { h2h[a] = {}; ids.forEach(b => { if (a !== b) h2h[a][b] = 0 }) })
+
+  const addPairwise = scoreById => {
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = 0; j < ids.length; j++) {
+        if (i === j) continue
+        if ((scoreById[ids[i]] ?? 0) > (scoreById[ids[j]] ?? 0)) h2h[ids[i]][ids[j]]++
+      }
+    }
+  }
+
+  let localShared = 0
+  let onlineShared = 0
+
+  // ---- Local shared games ----
+  allDetails.forEach(detail => {
+    const { players, rounds, game_result_id } = detail
+    if (!players || !rounds) return
+    const inGame = new Set(players.map(p => p.id))
+    if (!ids.every(id => inGame.has(id))) return
+    localShared++
+
+    const totals = {}
+    players.forEach(p => { totals[p.id] = 0 })
+    rounds.forEach(r => {
+      if (r.scores) players.forEach(p => { totals[p.id] += r.scores[p.id] || 0 })
+    })
+
+    const result = allResults.find(r => r.id === game_result_id)
+    selected.forEach(s => {
+      stats[s.id].games++
+      if (result?.winner_name === s.name) stats[s.id].wins++
+    })
+    addPairwise(totals)
+  })
+
+  // ---- Online shared games (only when every selected player has an online name) ----
+  const allHaveOnline = selected.every(s => s.onlineName)
+  if (allHaveOnline) {
+    onlineGames.forEach(g => {
+      const scoreByName = {}
+      ;(g.players || []).forEach(p => { scoreByName[p.name] = p.score ?? 0 })
+      if (!selected.every(s => s.onlineName in scoreByName)) return
+      onlineShared++
+
+      const scoreById = {}
+      selected.forEach(s => {
+        scoreById[s.id] = scoreByName[s.onlineName]
+        stats[s.id].games++
+        if (g.winner?.name === s.onlineName) stats[s.id].wins++
+      })
+      addPairwise(scoreById)
+    })
+  }
+
+  const rows = selected
+    .map(s => {
+      const st = stats[s.id]
+      return { ...st, winPct: st.games > 0 ? (st.wins / st.games) * 100 : null }
+    })
+    .sort((a, b) => b.wins - a.wins)
+
+  return { rows, h2h, localShared, onlineShared, totalShared: localShared + onlineShared, allHaveOnline }
 }
 
 // Returns { [leaderName]: { [targetName]: count } } — how many times leader sent King to target

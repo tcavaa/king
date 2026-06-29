@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts'
 import { computeGlobalStats, getGlobalAwards, TYPE_ROWS, computeKingMatrix, computeTypeEfficiency } from '../utils/analytics'
+import ComparePlayersPage from './ComparePlayersPage'
 
 import { PLAYER_COLORS as COLORS } from '../App'
 const TYPE_CODES = ['K', 'Q', 'J', 'H', 'L2', 'T', 'P1', 'P2', 'P3']
@@ -14,18 +15,23 @@ function getCssVar(name) {
 
 // onlineGames: season-filtered array from WinnersPage (already sliced to current season)
 export default function GlobalAnalyticsPage({ details, results, supabasePlayers = [], onlineGames = [], onBack }) {
+  const [view, setView] = useState('main') // 'main' | 'compare'
   const playerMap = useMemo(() => computeGlobalStats(details, results), [details, results])
 
   // Compute per-player online stats from the (season-filtered) game list
   const onlineMap = useMemo(() => {
     const m = {}
     onlineGames.forEach(g => {
-      ;(g.players || []).forEach(p => {
-        if (!m[p.name]) m[p.name] = { gamesPlayed: 0, wins: 0, totalScore: 0 }
+      const ps = g.players || []
+      ps.forEach(p => {
+        if (!m[p.name]) m[p.name] = { gamesPlayed: 0, wins: 0, seconds: 0, totalScore: 0 }
         m[p.name].gamesPlayed++
         m[p.name].totalScore += p.score ?? 0
         if (g.winner?.name === p.name) m[p.name].wins++
       })
+      // Second place = 2nd-highest score in the game
+      const ranking = [...ps].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+      if (ranking.length >= 2 && m[ranking[1].name]) m[ranking[1].name].seconds++
     })
     return m
   }, [onlineGames])
@@ -93,6 +99,19 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
     )
   }
 
+  if (view === 'compare') {
+    return (
+      <ComparePlayersPage
+        players={players}
+        details={details}
+        results={results}
+        onlineGames={onlineGames}
+        uuidToOnlineName={uuidToOnlineName}
+        onBack={() => setView('main')}
+      />
+    )
+  }
+
   return (
     <div>
       {/* Header */}
@@ -106,6 +125,17 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
         </p>
       </div>
 
+      {/* Compare entry point */}
+      <div className="card compare-cta">
+        <div>
+          <strong>Compare Players</strong>
+          <p style={{ color: 'var(--muted)', margin: '4px 0 0', fontSize: 13 }}>
+            Head-to-head stats for 2–4 players across the games they shared.
+          </p>
+        </div>
+        <button className="primary" onClick={() => setView('compare')}>⚔️ Compare</button>
+      </div>
+
       {/* Player Summary Table */}
       <div className="card">
         <h2>Player Summary</h2>
@@ -114,6 +144,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
             <div className="tr summary-tr">
               <div className="th">Player</div>
               <div className="th center online-col">All Wins</div>
+              <div className="th center online-col">🥈 2nd</div>
               <div className="th center">Games</div>
               <div className="th center">Wins</div>
               <div className="th center online-col">🌐 Games</div>
@@ -138,6 +169,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
               const plusTotal = p.P1 + p.P2 + p.P3
               const online = onlineMap[uuidToOnlineName[p.id]]
               const allWins    = p.wins + (online?.wins ?? 0)
+              const allSeconds = (p.seconds ?? 0) + (online?.seconds ?? 0)
               const totalGames = p.gamesPlayed + (online?.gamesPlayed ?? 0)
               const winPct        = p.gamesPlayed > 0 ? ((p.wins / p.gamesPlayed) * 100).toFixed(0) : '—'
               const onlineWinPct  = online?.gamesPlayed > 0 ? ((online.wins / online.gamesPlayed) * 100).toFixed(0) : '—'
@@ -146,6 +178,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
                 <div key={p.id} className="tr summary-tr">
                   <div className="td bold">{p.name}</div>
                   <div className="td center online-col bold">{allWins}</div>
+                  <div className="td center online-col">{allSeconds}</div>
                   <div className="td center">{p.gamesPlayed}</div>
                   <div className="td center">{p.wins}</div>
                   <div className="td center online-col">{online ? online.gamesPlayed : '—'}</div>
