@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useRef } from 'react'
 import { GAME_TYPES } from '../constants/gameTypes'
 import { computeScoresForRound } from '../utils/scoring'
+import { TYPE_BTN_DECOR } from '../utils/decorations'
 
 export default function GameTypeSelector({
   players,
@@ -104,6 +105,7 @@ export default function GameTypeSelector({
             className={selectedTypeCode === t.code ? 'type-btn selected' : 'type-btn'}
             onClick={() => setSelectedTypeCode(t.code)}
             type="button"
+            data-decor={TYPE_BTN_DECOR[t.code]}
           >
             {t.label}
           </button>

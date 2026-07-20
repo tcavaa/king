@@ -3,7 +3,10 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine, Cell,
 } from 'recharts'
+import { Swords, Medal, Globe } from 'lucide-react'
 import { computeGlobalStats, getGlobalAwards, TYPE_ROWS, computeKingMatrix, computeTypeEfficiency } from '../utils/analytics'
+import { isOnlineWinner } from '../utils/winners'
+import { CardTypeIcon, AwardIcon } from '../utils/gameIcons'
 import ComparePlayersPage from './ComparePlayersPage'
 
 import { PLAYER_COLORS as COLORS } from '../App'
@@ -27,7 +30,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
         if (!m[p.name]) m[p.name] = { gamesPlayed: 0, wins: 0, seconds: 0, totalScore: 0 }
         m[p.name].gamesPlayed++
         m[p.name].totalScore += p.score ?? 0
-        if (g.winner?.name === p.name) m[p.name].wins++
+        if (isOnlineWinner(g, p.name)) m[p.name].wins++
       })
       // Second place = 2nd-highest score in the game
       const ranking = [...ps].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
@@ -68,7 +71,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
   // Bar chart: total units collected per card type per player
   const unitBarData = useMemo(() => {
     return TYPE_ROWS.map(tr => {
-      const point = { type: tr.icon + ' ' + tr.label }
+      const point = { type: tr.label }
       players.forEach(p => { point[p.name] = p[tr.code] || 0 })
       return point
     })
@@ -133,7 +136,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
             Head-to-head stats for 2–4 players across the games they shared.
           </p>
         </div>
-        <button className="primary" onClick={() => setView('compare')}>⚔️ Compare</button>
+        <button className="primary icon-btn" onClick={() => setView('compare')}><Swords size={14} /> Compare</button>
       </div>
 
       {/* Player Summary Table */}
@@ -144,23 +147,23 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
             <div className="tr summary-tr">
               <div className="th">Player</div>
               <div className="th center online-col">All Wins</div>
-              <div className="th center online-col">🥈 2nd</div>
+              <div className="th center online-col"><Medal size={11} /> 2nd</div>
               <div className="th center">Games</div>
               <div className="th center">Wins</div>
-              <div className="th center online-col">🌐 Games</div>
-              <div className="th center online-col">🌐 Wins</div>
+              <div className="th center online-col"><Globe size={11} /> Games</div>
+              <div className="th center online-col"><Globe size={11} /> Wins</div>
               <div className="th center online-col">Total Games</div>
               <div className="th center">Win%</div>
-              <div className="th center online-col">🌐 Win%</div>
+              <div className="th center online-col"><Globe size={11} /> Win%</div>
               <div className="th center online-col">Total%</div>
               <div className="th center">Avg Score</div>
-              <div className="th center">♛ Q</div>
-              <div className="th center">🃏 J</div>
-              <div className="th center">❤️ H</div>
-              <div className="th center">♥ K</div>
-              <div className="th center">🎴 L2</div>
-              <div className="th center">💀 T</div>
-              <div className="th center">✨ P</div>
+              <div className="th center"><CardTypeIcon code="Q" size={11} /> Q</div>
+              <div className="th center"><CardTypeIcon code="J" size={11} /> J</div>
+              <div className="th center"><CardTypeIcon code="H" size={11} /> H</div>
+              <div className="th center"><CardTypeIcon code="K" size={11} /> K</div>
+              <div className="th center"><CardTypeIcon code="L2" size={11} /> L2</div>
+              <div className="th center"><CardTypeIcon code="T" size={11} /> T</div>
+              <div className="th center"><CardTypeIcon code="P" size={11} /> P</div>
             </div>
           </div>
           <div className="tbody">
@@ -208,7 +211,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
         <div className="awards-grid">
           {awards.map((a, i) => (
             <div key={i} className="award-card">
-              <div className="award-icon">{a.icon}</div>
+              <div className="award-icon"><AwardIcon name={a.icon} /></div>
               <div className="award-title">{a.title}</div>
               <div className="award-player">{a.player}</div>
               <div className="award-value">{a.value}</div>
@@ -353,7 +356,7 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
             const sorted = [...players].sort((a, b) => (b[tr.code] || 0) - (a[tr.code] || 0))
             return (
               <div key={tr.code} className="leaderboard-card">
-                <div className="leaderboard-title">{tr.icon} {tr.label}</div>
+                <div className="leaderboard-title"><CardTypeIcon code={tr.code} size={12} /> {tr.label}</div>
                 {sorted.map((p, i) => (
                   <div key={p.id} className={`leaderboard-row ${i === 0 ? 'leader' : ''}`}>
                     <span className="lb-rank">{i + 1}.</span>
@@ -384,13 +387,13 @@ export default function GlobalAnalyticsPage({ details, results, supabasePlayers 
                 <div className="pb-body">
                   <div className="pb-stat"><span>Win Rate</span><strong>{winPct}%</strong></div>
                   <div className="pb-stat"><span>Avg Score</span><strong className={+avgScore >= 0 ? 'pos' : 'neg'}>{avgScore}</strong></div>
-                  <div className="pb-stat"><span>♛ Queens</span><strong>{p.Q}</strong></div>
-                  <div className="pb-stat"><span>🃏 Jacks</span><strong>{p.J}</strong></div>
-                  <div className="pb-stat"><span>❤️ Hearts</span><strong>{p.H}</strong></div>
-                  <div className="pb-stat"><span>♥ Kings</span><strong>{p.K}</strong></div>
-                  <div className="pb-stat"><span>🎴 Last 2</span><strong>{p.L2}</strong></div>
-                  <div className="pb-stat"><span>💀 Bad Tricks</span><strong>{p.T}</strong></div>
-                  <div className="pb-stat"><span>✨ Plus Tricks</span><strong className="pos">{plusTotal}</strong></div>
+                  <div className="pb-stat"><span><CardTypeIcon code="Q" /> Queens</span><strong>{p.Q}</strong></div>
+                  <div className="pb-stat"><span><CardTypeIcon code="J" /> Jacks</span><strong>{p.J}</strong></div>
+                  <div className="pb-stat"><span><CardTypeIcon code="H" /> Hearts</span><strong>{p.H}</strong></div>
+                  <div className="pb-stat"><span><CardTypeIcon code="K" /> Kings</span><strong>{p.K}</strong></div>
+                  <div className="pb-stat"><span><CardTypeIcon code="L2" /> Last 2</span><strong>{p.L2}</strong></div>
+                  <div className="pb-stat"><span><CardTypeIcon code="T" /> Bad Tricks</span><strong>{p.T}</strong></div>
+                  <div className="pb-stat"><span><CardTypeIcon code="P" /> Plus Tricks</span><strong className="pos">{plusTotal}</strong></div>
                 </div>
               </div>
             )

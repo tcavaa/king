@@ -5,6 +5,7 @@ import {
 } from 'recharts'
 import { computeGameStats, computeScoresByType, getGameAwards, TYPE_ROWS } from '../utils/analytics'
 import { computePerGameAchievements } from '../utils/achievements'
+import { CardTypeIcon, AwardIcon } from '../utils/gameIcons'
 import AchievementBadges from './AchievementBadges'
 import { PLAYER_COLORS as COLORS } from '../App'
 
@@ -34,7 +35,7 @@ export default function GameAnalytics({ players, rounds, participants }) {
   // Bar chart: score contribution per game type per player (only non-zero types)
   const barData = useMemo(() => {
     return TYPE_ROWS.map(tr => {
-      const point = { type: tr.icon + ' ' + tr.label }
+      const point = { type: tr.label }
       let anyNonZero = false
       players.forEach(p => {
         const score = scoresByType[p.id]?.[tr.code] || 0
@@ -92,7 +93,7 @@ export default function GameAnalytics({ players, rounds, participants }) {
               const maxVal = Math.max(...values)
               return (
                 <div key={tr.code} className="tr analytics-tr" style={{ '--ac': players.length }}>
-                  <div className="td">{tr.icon} {tr.label}</div>
+                  <div className="td"><CardTypeIcon code={tr.code} /> {tr.label}</div>
                   {players.map((p, i) => {
                     const val = stats[p.id]?.[tr.code] || 0
                     const isMax = val > 0 && val === maxVal
@@ -118,7 +119,7 @@ export default function GameAnalytics({ players, rounds, participants }) {
         <div className="awards-grid">
           {awards.map((a, i) => (
             <div key={i} className="award-card">
-              <div className="award-icon">{a.icon}</div>
+              <div className="award-icon"><AwardIcon name={a.icon} /></div>
               <div className="award-title">{a.title}</div>
               <div className="award-player">{a.player}</div>
               <div className="award-value">{a.value}</div>

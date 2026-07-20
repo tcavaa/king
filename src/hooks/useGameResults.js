@@ -9,7 +9,7 @@ export function useGameResults() {
     async function fetchResults() {
       const { data } = await supabase
         .from('game_results')
-        .select('id, winner_name, played_at, participants')
+        .select('*')
         .order('played_at', { ascending: false })
       if (data) setResults(data)
       setLoading(false)

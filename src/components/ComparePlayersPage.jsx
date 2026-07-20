@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Swords, Trophy } from 'lucide-react'
 import { computeComparison } from '../utils/analytics'
 
 const MAX_SELECT = 4
@@ -42,7 +43,7 @@ export default function ComparePlayersPage({ players, details, results, onlineGa
       {/* Header */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0 }}>⚔️ Compare Players</h2>
+          <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Swords size={17} /> Compare Players</h2>
           <button className="link" onClick={onBack}>← Analytics</button>
         </div>
         <p style={{ color: 'var(--muted)', margin: '8px 0 0', fontSize: 13 }}>
@@ -117,7 +118,10 @@ export default function ComparePlayersPage({ players, details, results, onlineGa
               <div className="tbody">
                 {cmp.rows.map((r, i) => (
                   <div key={r.id} className={`tr compare-tr ${i === 0 ? 'leader-row' : ''}`}>
-                    <div className="td bold">{i === 0 ? '🏆 ' : ''}{r.name}</div>
+                    <div className="td bold">
+                      {i === 0 && <Trophy size={12} style={{ verticalAlign: '-1px', marginRight: 4, color: 'var(--accent-gold)' }} />}
+                      {r.name}
+                    </div>
                     <div className="td center bold">{r.wins}</div>
                     <div className="td center">{r.games}</div>
                     <div className="td center">{r.winPct === null ? '—' : `${r.winPct.toFixed(0)}%`}</div>

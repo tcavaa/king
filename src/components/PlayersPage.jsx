@@ -5,6 +5,7 @@ import { useAllGameDetails } from '../hooks/useAllGameDetails'
 import TrophyIcon from './TrophyIcon'
 import AchievementBadges from './AchievementBadges'
 import { computeAllLifetimeAchievements } from '../utils/achievements'
+import { isWinnerOf, isChampionName } from '../utils/winners'
 
 export default function PlayersPage({ onBack, currentChampion }) {
   const { players, loading, addPlayer, deletePlayer } = usePlayers()
@@ -23,7 +24,7 @@ export default function PlayersPage({ onBack, currentChampion }) {
         if (!map[participant.name]) return
         map[participant.name].games++
         map[participant.name].totalScore += participant.score
-        if (r.winner_name === participant.name) map[participant.name].wins++
+        if (isWinnerOf(r, participant.name)) map[participant.name].wins++
       })
     })
     return map
@@ -54,7 +55,7 @@ export default function PlayersPage({ onBack, currentChampion }) {
           onChange={(e) => { setName(e.target.value); setErr(null) }}
           placeholder="Player name"
           type="text"
-          style={{ flex: 1, fontSize: 16, minHeight: 44, padding: '8px 10px', borderRadius: 6, border: '2px solid var(--line)', background: '#fff' }}
+          style={{ flex: 1, fontSize: 16, minHeight: 44, padding: '8px 10px', borderRadius: 10, border: '1px solid var(--line-strong)', background: 'var(--input-bg)', color: 'var(--text)' }}
         />
         <button className="primary" disabled={saving || !name.trim()}>Add</button>
       </form>
@@ -75,7 +76,7 @@ export default function PlayersPage({ onBack, currentChampion }) {
                 <div className="player-info">
                   <span className="player-name-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                     {p.name}
-                    {currentChampion === p.name && <TrophyIcon size={16} color="#d4a017" />}
+                    {isChampionName(currentChampion, p.name) && <TrophyIcon size={16} color="#d4a017" />}
                   </span>
                   {s && s.games > 0 ? (
                     <span className="player-stats">

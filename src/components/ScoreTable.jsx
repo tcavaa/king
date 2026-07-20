@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Crown, Handshake, Skull, Pencil, Undo2 } from 'lucide-react'
 import { GAME_TYPES } from '../constants/gameTypes'
 import TrophyIcon from './TrophyIcon'
+import { isChampionName } from '../utils/winners'
 
 function AnimatedScore({ value, from = 0, showSign = true }) {
   const [displayed, setDisplayed] = useState(from)
@@ -123,11 +125,13 @@ export default function ScoreTable({ players, rounds, onEditLastRound, onUndoLas
                 style={{ borderBottom: playerColors[i] ? `3px solid ${playerColors[i]}` : undefined }}
               >
                 <div style={{ fontSize: 12, lineHeight: 1, marginBottom: 2, minHeight: 14 }}>
-                  {leaders.has(p.id) ? (isTie ? '🤝' : '👑') : ''}
+                  {leaders.has(p.id)
+                    ? (isTie ? <Handshake size={13} /> : <Crown size={13} style={{ color: 'var(--accent-gold)' }} />)
+                    : ''}
                 </div>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   {p.name}
-                  {currentChampion === p.name && <TrophyIcon size={16} color="#d4a017" />}
+                  {isChampionName(currentChampion, p.name) && <TrophyIcon size={16} color="#d4a017" />}
                 </span>
               </div>
             ))}
@@ -145,9 +149,9 @@ export default function ScoreTable({ players, rounds, onEditLastRound, onUndoLas
                     <span className="edit-actions">
                       {!isEditing && (
                         <>
-                          <button className="link" onClick={startEdit} title="Edit last round">✎ Edit</button>
+                          <button className="link icon-btn" onClick={startEdit} title="Edit last round"><Pencil size={11} /> Edit</button>
                           {onUndoLastRound && (
-                            <button className="link" onClick={onUndoLastRound} title="Undo last round" style={{ color: 'var(--muted)' }}>↩ Undo</button>
+                            <button className="link icon-btn" onClick={onUndoLastRound} title="Undo last round" style={{ color: 'var(--muted)' }}><Undo2 size={11} /> Undo</button>
                           )}
                         </>
                       )}
@@ -197,7 +201,7 @@ export default function ScoreTable({ players, rounds, onEditLastRound, onUndoLas
               const fromVal = prevTotalsRef.current[p.id] ?? val
               return (
                 <div key={p.id} className={cls}>
-                  {inDanger && '💀 '}
+                  {inDanger && <Skull size={12} style={{ verticalAlign: '-1px', marginRight: 3, color: 'var(--accent-bad)' }} />}
                   {isAnimating
                     ? <AnimatedScore value={val} from={fromVal} showSign={false} />
                     : val}
@@ -211,8 +215,8 @@ export default function ScoreTable({ players, rounds, onEditLastRound, onUndoLas
       {gameFinished && leaders.size > 0 && (
         <div className="winner">
           {isTie
-            ? <>🤝 Tie: <strong>{players.filter(p => leaders.has(p.id)).map(p => p.name).join(' & ')}</strong> with {maxTotal} points</>
-            : <>👑 Winner: <strong>{players.find(p => leaders.has(p.id))?.name}</strong> with {maxTotal} points</>
+            ? <><Handshake size={15} style={{ verticalAlign: '-2px', marginRight: 5 }} />Tie: <strong>{players.filter(p => leaders.has(p.id)).map(p => p.name).join(' & ')}</strong> with {maxTotal} points</>
+            : <><Crown size={15} style={{ verticalAlign: '-2px', marginRight: 5, color: 'var(--accent-gold)' }} />Winner: <strong>{players.find(p => leaders.has(p.id))?.name}</strong> with {maxTotal} points</>
           }
         </div>
       )}

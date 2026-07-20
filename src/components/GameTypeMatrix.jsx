@@ -1,5 +1,7 @@
 import { GAME_TYPES } from '../constants/gameTypes'
 import TrophyIcon from './TrophyIcon'
+import { isChampionName } from '../utils/winners'
+import { MATRIX_CELL_DECOR } from '../utils/decorations'
 
 export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlayerIndex, onPreselect, playerColors = [], currentChampion }) {
   return (
@@ -16,7 +18,7 @@ export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlaye
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 {p.name}
-                {currentChampion === p.name && <TrophyIcon size={16} color="#d4a017" />}
+                {isChampionName(currentChampion, p.name) && <TrophyIcon size={16} color="#d4a017" />}
               </span>
             </div>
           ))}
@@ -33,6 +35,7 @@ export default function GameTypeMatrix({ players, usedTypesByPlayer, activePlaye
                   type="button"
                   disabled={used || idx !== activePlayerIndex}
                   onClick={() => onPreselect && onPreselect(t.code)}
+                  data-decor={MATRIX_CELL_DECOR[`${t.code}-${idx}`]}
                 >
                   {used ? '✕' : '•'}
                 </button>

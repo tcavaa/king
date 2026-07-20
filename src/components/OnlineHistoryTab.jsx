@@ -1,13 +1,11 @@
 import { Fragment, useMemo, useState } from 'react'
+import { Handshake, Trophy } from 'lucide-react'
 import { useOnlineGames } from '../hooks/useOnlineData'
 import { GAME_TYPES } from '../constants/gameTypes'
+import { onlineWinnerNames, isOnlineWinner } from '../utils/winners'
+import { CardTypeIcon } from '../utils/gameIcons'
 import ScoreChart from './ScoreChart'
 import GameAnalytics from './GameAnalytics'
-
-const GAME_TYPE_LABELS = {
-  K: '♥ K', Q: '♛ Q', J: '🃏 J', H: '❤️ H',
-  L2: '🎴 L2', T: '💀 T', P1: '✨ P1', P2: '✨ P2', P3: '✨ P3',
-}
 
 // Convert online seat-based format to the internal {id, name} / UUID-keyed format
 // that ScoreChart and GameAnalytics expect. We use String(seat) as the id.
@@ -87,7 +85,10 @@ function OnlineGameDetail({ game, onBack }) {
             <h2 style={{ margin: '0 0 4px' }}>Online Game Details</h2>
             <div style={{ color: 'var(--muted)', fontSize: 13 }}>{date}</div>
             <div style={{ marginTop: 6 }}>
-              Winner: <strong>{game.winner?.name}</strong>
+              {onlineWinnerNames(game).length > 1
+                ? <><Handshake size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Tie — Winners:</>
+                : 'Winner:'}{' '}
+              <strong>{onlineWinnerNames(game).join(' & ') || game.winner?.name}</strong>
               <span style={{ color: 'var(--muted)', fontSize: 13, marginLeft: 8 }}>
                 ({seatPlayers.map(p => `${p.name} (${p.score > 0 ? '+' : ''}${p.score})`).join(' · ')})
               </span>
@@ -114,7 +115,7 @@ function OnlineGameDetail({ game, onBack }) {
                   <th style={thStyle}>Rnd</th>
                   <th style={thStyle}>Type</th>
                   {seatPlayers.map(p => (
-                    <th key={p.seat} style={{ ...thStyle, color: p.name === game.winner?.name ? 'var(--accent-good)' : 'var(--text)' }}>
+                    <th key={p.seat} style={{ ...thStyle, color: isOnlineWinner(game, p.name) ? 'var(--accent-good)' : 'var(--text)' }}>
                       {p.name}
                     </th>
                   ))}
@@ -127,7 +128,9 @@ function OnlineGameDetail({ game, onBack }) {
                     <Fragment key={i}>
                       <tr style={{ borderBottom: '1px solid var(--line)' }}>
                         <td style={tdStyle}>{rd.round}</td>
-                        <td style={{ ...tdStyle, fontWeight: 600 }}>{GAME_TYPE_LABELS[rd.gameType] ?? rd.gameType}</td>
+                        <td style={{ ...tdStyle, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          <CardTypeIcon code={rd.gameType} size={12} /> {rd.gameType}
+                        </td>
                         {seatPlayers.map(p => {
                           const score = rd.scores?.[p.seat] ?? 0
                           return (
@@ -151,9 +154,9 @@ function OnlineGameDetail({ game, onBack }) {
                 <tr style={{ borderTop: '2px solid var(--line)', background: 'var(--cell-bg)' }}>
                   <td style={{ ...tdStyle, fontWeight: 700 }} colSpan={2}>Final</td>
                   {seatPlayers.map(p => (
-                    <td key={p.seat} style={{ ...tdStyle, fontWeight: 700, color: p.name === game.winner?.name ? 'var(--accent-good)' : 'var(--text)' }}>
+                    <td key={p.seat} style={{ ...tdStyle, fontWeight: 700, color: isOnlineWinner(game, p.name) ? 'var(--accent-good)' : 'var(--text)' }}>
                       {p.score > 0 ? '+' : ''}{p.score}
-                      {p.name === game.winner?.name && ' 🏆'}
+                      {isOnlineWinner(game, p.name) && <Trophy size={12} style={{ verticalAlign: '-1px', marginLeft: 4, color: 'var(--accent-gold)' }} />}
                     </td>
                   ))}
                 </tr>
@@ -201,7 +204,10 @@ export default function OnlineHistoryTab() {
         {games.map(g => (
           <div key={g.id} className="tr history-tr">
             <div className="td">{new Date(g.playedAt).toLocaleDateString()}</div>
-            <div className="td bold">{g.winner?.name}</div>
+            <div className="td bold">
+              {onlineWinnerNames(g).length > 1 && <Handshake size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />}
+              {onlineWinnerNames(g).join(' & ') || g.winner?.name}
+            </div>
             <div className="td">
               {[...g.players].sort((a, b) => a.seat - b.seat)
                 .map(p => `${p.name} (${p.score > 0 ? '+' : ''}${p.score})`).join(', ')}

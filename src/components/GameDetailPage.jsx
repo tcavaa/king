@@ -1,5 +1,7 @@
+import { Timer } from 'lucide-react'
 import ScoreChart from './ScoreChart'
 import GameAnalytics from './GameAnalytics'
+import { formatDuration } from '../utils/time'
 
 export default function GameDetailPage({ detail, result, onBack }) {
   const { players, rounds } = detail
@@ -11,8 +13,13 @@ export default function GameDetailPage({ detail, result, onBack }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <h2 style={{ margin: '0 0 4px' }}>Game Details</h2>
-            <div style={{ color: 'var(--muted)', fontSize: 14 }}>
+            <div style={{ color: 'var(--muted)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
               {date} · {players.map(p => p.name).join(', ')}
+              {result?.duration_seconds != null && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                  · <Timer size={13} /> {formatDuration(result.duration_seconds)}
+                </span>
+              )}
             </div>
             {result && (
               <div style={{ marginTop: 6 }}>

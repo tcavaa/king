@@ -1,29 +1,36 @@
+import {
+  Star, Gem, Shield, TrendingUp, Flame, Rocket, Wand2,
+  Gamepad2, Joystick, Crown, Sparkle, Stars, Medal, Diamond,
+  Trophy, Ghost, Swords, Zap, CloudLightning,
+} from 'lucide-react'
 import { GAME_TYPES } from '../constants/gameTypes'
+import { isWinnerOf } from './winners'
 
+// `Icon` is a lucide-react component; `color` tints it wherever it renders.
 export const ACHIEVEMENT_DEFS = {
-  PERFECT_PLUS:          { id: 'PERFECT_PLUS',          icon: '⭐', label: 'Perfect Plus',       desc: '10/10 tricks in a Plus round',                        repeatable: true  },
-  PLUS_PERFECTIONIST:    { id: 'PLUS_PERFECTIONIST',    icon: '💎', label: 'Plus Perfectionist', desc: '10/10 in all 3 Plus rounds in one game',              repeatable: true  },
-  UNTOUCHABLE:           { id: 'UNTOUCHABLE',           icon: '🛡️', label: 'Untouchable',        desc: 'Led every negative round without taking any penalty', repeatable: true  },
-  NEVER_BELOW_ZERO:      { id: 'NEVER_BELOW_ZERO',      icon: '📈', label: 'In the Green',       desc: 'Score never dropped below zero',                      repeatable: true  },
-  UNDERDOG:              { id: 'UNDERDOG',              icon: '🔥', label: 'Underdog',            desc: 'Won despite being in last place the longest',         repeatable: true  },
-  RUNAWAY_WIN:           { id: 'RUNAWAY_WIN',           icon: '🚀', label: 'Runaway',             desc: 'Won with 100+ point margin over 2nd place',           repeatable: true  },
-  PERFECT_PLUS_HAT_TRICK:{ id: 'PERFECT_PLUS_HAT_TRICK',icon: '🎩', label: 'Hat Trick Plus',    desc: '10/10 in a Plus round 3+ times (lifetime)',           repeatable: false },
-  GAMES_50:              { id: 'GAMES_50',              icon: '🎮', label: 'Dedicated',           desc: 'Played 50 games',                                     repeatable: false },
-  GAMES_100:             { id: 'GAMES_100',             icon: '🕹️', label: 'Century',            desc: 'Played 100 games',                                    repeatable: false },
-  GAMES_150:             { id: 'GAMES_150',             icon: '👑', label: 'Legend',              desc: 'Played 150 games',                                    repeatable: false },
-  GAMES_250:             { id: 'GAMES_250',             icon: '💫', label: 'Veteran',             desc: 'Played 250 games',                                    repeatable: false },
-  GAMES_500:             { id: 'GAMES_500',             icon: '🌟', label: 'Elite',               desc: 'Played 500 games',                                    repeatable: false },
-  GAMES_800:             { id: 'GAMES_800',             icon: '🏅', label: 'Master',              desc: 'Played 800 games',                                    repeatable: false },
-  GAMES_1000:            { id: 'GAMES_1000',            icon: '💠', label: 'Grandmaster',         desc: 'Played 1000 games',                                   repeatable: false },
-  WINS_10:               { id: 'WINS_10',               icon: '🥉', label: '10 Wins',             desc: 'Won 10 games',                                        repeatable: false },
-  WINS_25:               { id: 'WINS_25',               icon: '🥈', label: '25 Wins',             desc: 'Won 25 games',                                        repeatable: false },
-  WINS_50:               { id: 'WINS_50',               icon: '🥇', label: '50 Wins',             desc: 'Won 50 games',                                        repeatable: false },
-  WINS_250:              { id: 'WINS_250',              icon: '🏆', label: '250 Wins',             desc: 'Won 250 games',                                       repeatable: false },
-  WINS_500:              { id: 'WINS_500',              icon: '👹', label: '500 Wins',             desc: 'Won 500 games',                                       repeatable: false },
-  WINS_1000:             { id: 'WINS_1000',             icon: '🐉', label: '1000 Wins',            desc: 'Won 1000 games',                                      repeatable: false },
-  WIN_STREAK_3:          { id: 'WIN_STREAK_3',          icon: '⚡', label: '3 in a Row',          desc: 'Won 3 consecutive games',                             repeatable: false },
-  WIN_STREAK_5:          { id: 'WIN_STREAK_5',          icon: '🌩️', label: '5 in a Row',         desc: 'Won 5 consecutive games',                             repeatable: false },
-  WIN_STREAK_10:         { id: 'WIN_STREAK_10',         icon: '☄️', label: '10 in a Row',        desc: 'Won 10 consecutive games',                            repeatable: false },
+  PERFECT_PLUS:          { id: 'PERFECT_PLUS',          Icon: Star,           color: '#eab308', label: 'Perfect Plus',       desc: '10/10 tricks in a Plus round',                        repeatable: true  },
+  PLUS_PERFECTIONIST:    { id: 'PLUS_PERFECTIONIST',    Icon: Gem,            color: '#06b6d4', label: 'Plus Perfectionist', desc: '10/10 in all 3 Plus rounds in one game',              repeatable: true  },
+  UNTOUCHABLE:           { id: 'UNTOUCHABLE',           Icon: Shield,         color: '#2563eb', label: 'Untouchable',        desc: 'Led every negative round without taking any penalty', repeatable: true  },
+  NEVER_BELOW_ZERO:      { id: 'NEVER_BELOW_ZERO',      Icon: TrendingUp,     color: '#059669', label: 'In the Green',       desc: 'Score never dropped below zero',                      repeatable: true  },
+  UNDERDOG:              { id: 'UNDERDOG',              Icon: Flame,          color: '#ea580c', label: 'Underdog',            desc: 'Won despite being in last place the longest',         repeatable: true  },
+  RUNAWAY_WIN:           { id: 'RUNAWAY_WIN',           Icon: Rocket,         color: '#7c3aed', label: 'Runaway',             desc: 'Won with 100+ point margin over 2nd place',           repeatable: true  },
+  PERFECT_PLUS_HAT_TRICK:{ id: 'PERFECT_PLUS_HAT_TRICK',Icon: Wand2,          color: '#d946ef', label: 'Hat Trick Plus',    desc: '10/10 in a Plus round 3+ times (lifetime)',           repeatable: false },
+  GAMES_50:              { id: 'GAMES_50',              Icon: Gamepad2,       color: '#64748b', label: 'Dedicated',           desc: 'Played 50 games',                                     repeatable: false },
+  GAMES_100:             { id: 'GAMES_100',             Icon: Joystick,       color: '#0891b2', label: 'Century',            desc: 'Played 100 games',                                    repeatable: false },
+  GAMES_150:             { id: 'GAMES_150',             Icon: Crown,          color: '#b45309', label: 'Legend',              desc: 'Played 150 games',                                    repeatable: false },
+  GAMES_250:             { id: 'GAMES_250',             Icon: Sparkle,        color: '#0ea5e9', label: 'Veteran',             desc: 'Played 250 games',                                    repeatable: false },
+  GAMES_500:             { id: 'GAMES_500',             Icon: Stars,          color: '#eab308', label: 'Elite',               desc: 'Played 500 games',                                    repeatable: false },
+  GAMES_800:             { id: 'GAMES_800',             Icon: Medal,          color: '#b8860b', label: 'Master',              desc: 'Played 800 games',                                    repeatable: false },
+  GAMES_1000:            { id: 'GAMES_1000',            Icon: Diamond,        color: '#7c3aed', label: 'Grandmaster',         desc: 'Played 1000 games',                                   repeatable: false },
+  WINS_10:               { id: 'WINS_10',               Icon: Medal,          color: '#a0642d', label: '10 Wins',             desc: 'Won 10 games',                                        repeatable: false },
+  WINS_25:               { id: 'WINS_25',               Icon: Medal,          color: '#8c8f96', label: '25 Wins',             desc: 'Won 25 games',                                        repeatable: false },
+  WINS_50:               { id: 'WINS_50',               Icon: Medal,          color: '#d4a017', label: '50 Wins',             desc: 'Won 50 games',                                        repeatable: false },
+  WINS_250:              { id: 'WINS_250',              Icon: Trophy,         color: '#d4a017', label: '250 Wins',             desc: 'Won 250 games',                                       repeatable: false },
+  WINS_500:              { id: 'WINS_500',              Icon: Ghost,          color: '#dc2626', label: '500 Wins',             desc: 'Won 500 games',                                       repeatable: false },
+  WINS_1000:             { id: 'WINS_1000',             Icon: Swords,         color: '#b91c1c', label: '1000 Wins',            desc: 'Won 1000 games',                                      repeatable: false },
+  WIN_STREAK_3:          { id: 'WIN_STREAK_3',          Icon: Zap,            color: '#eab308', label: '3 in a Row',          desc: 'Won 3 consecutive games',                             repeatable: false },
+  WIN_STREAK_5:          { id: 'WIN_STREAK_5',          Icon: CloudLightning, color: '#0ea5e9', label: '5 in a Row',         desc: 'Won 5 consecutive games',                             repeatable: false },
+  WIN_STREAK_10:         { id: 'WIN_STREAK_10',         Icon: Flame,          color: '#dc2626', label: '10 in a Row',        desc: 'Won 10 consecutive games',                            repeatable: false },
 }
 
 const NEGATIVE_CODES = new Set(['K', 'Q', 'J', 'H', 'L2', 'T'])
@@ -93,7 +100,8 @@ export function computePerGameAchievements(players, rounds) {
   const finalScores = {}
   players.forEach(p => { finalScores[p.id] = running[p.id] })
   const maxScore = Math.max(...players.map(p => finalScores[p.id]))
-  const winner = players.find(p => finalScores[p.id] === maxScore)
+  // Ties crown everyone on the top score.
+  const winners = players.filter(p => finalScores[p.id] === maxScore)
 
   players.forEach(p => {
     const pp = plusPerfect[p.id]
@@ -105,13 +113,19 @@ export function computePerGameAchievements(players, rounds) {
     if (neverBelow[p.id]) result[p.id].push('NEVER_BELOW_ZERO')
   })
 
-  if (winner && players.length >= 2) {
-    const others = players.filter(p => p.id !== winner.id)
+  if (winners.length && players.length >= 2) {
+    // UNDERDOG per tied winner: spent strictly more rounds in last place
+    // than every non-winner.
+    const others = players.filter(p => !winners.some(w => w.id === p.id))
     const maxOtherLast = others.length > 0 ? Math.max(...others.map(p => lastPlaceCount[p.id])) : -1
-    if (lastPlaceCount[winner.id] > maxOtherLast) result[winner.id].push('UNDERDOG')
+    winners.forEach(w => {
+      if (others.length && lastPlaceCount[w.id] > maxOtherLast) result[w.id].push('UNDERDOG')
+    })
   }
 
-  if (winner && players.length >= 2) {
+  // RUNAWAY_WIN needs a 100+ margin over 2nd place — impossible on a tie
+  // (tied winners are 0 apart), so only a sole winner can earn it.
+  if (winners.length === 1 && players.length >= 2) {
     const sorted = [...players].sort((a, b) => finalScores[b.id] - finalScores[a.id])
     const margin = finalScores[sorted[0].id] - finalScores[sorted[1].id]
     if (margin >= 100) result[sorted[0].id].push('RUNAWAY_WIN')
@@ -158,7 +172,8 @@ export function computeAllLifetimeAchievements(allGameDetails, allResults) {
       .sort((a, b) => new Date(a.played_at) - new Date(b.played_at))
 
     const gamesPlayed = playerResults.length
-    const wins = playerResults.filter(res => res.winner_name === name).length
+    // Tie-aware: shared top scores count as wins for everyone involved.
+    const wins = playerResults.filter(res => isWinnerOf(res, name)).length
 
     if (gamesPlayed >= 50)   r['GAMES_50'] = 1
     if (gamesPlayed >= 100)  r['GAMES_100'] = 1
@@ -177,7 +192,7 @@ export function computeAllLifetimeAchievements(allGameDetails, allResults) {
     let maxStreak = 0
     let current = 0
     playerResults.forEach(res => {
-      if (res.winner_name === name) { current++; maxStreak = Math.max(maxStreak, current) }
+      if (isWinnerOf(res, name)) { current++; maxStreak = Math.max(maxStreak, current) }
       else current = 0
     })
     if (maxStreak >= 3)  r['WIN_STREAK_3'] = 1

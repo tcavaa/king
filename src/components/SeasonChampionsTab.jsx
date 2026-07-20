@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react'
+import { Globe, Handshake } from 'lucide-react'
 import TrophyIcon from './TrophyIcon'
 import { computeGlobalStats } from '../utils/analytics'
+import { isOnlineWinner, isChampionName } from '../utils/winners'
+import { getTheme } from '../utils/themes'
 
 const fmt = d => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -26,7 +29,7 @@ function SeasonStats({ season, allDetails, allResults, allOnlineGames, supabaseP
         ;(g.players || []).forEach(p => {
           if (!m[p.name]) m[p.name] = { gamesPlayed: 0, wins: 0 }
           m[p.name].gamesPlayed++
-          if (g.winner?.name === p.name) m[p.name].wins++
+          if (isOnlineWinner(g, p.name)) m[p.name].wins++
         })
       })
     return m
@@ -61,7 +64,7 @@ function SeasonStats({ season, allDetails, allResults, allOnlineGames, supabaseP
           <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.15)' }}>
             <th style={th}>Player</th>
             <th style={{ ...th, textAlign: 'center' }}>Local W</th>
-            <th style={{ ...th, textAlign: 'center' }}>🌐 W</th>
+            <th style={{ ...th, textAlign: 'center' }}><Globe size={10} /> W</th>
             <th style={{ ...th, textAlign: 'center' }}>All W</th>
             <th style={{ ...th, textAlign: 'center' }}>Games</th>
             <th style={{ ...th, textAlign: 'center' }}>Win%</th>
@@ -75,7 +78,7 @@ function SeasonStats({ season, allDetails, allResults, allOnlineGames, supabaseP
             const allGames  = p.gamesPlayed + (online?.gamesPlayed ?? 0)
             const winPct    = allGames > 0 ? ((allWins / allGames) * 100).toFixed(0) + '%' : '—'
             const avg       = p.gamesPlayed > 0 ? (p.totalScore / p.gamesPlayed).toFixed(1) : '—'
-            const isChamp   = p.name === season.champion_name
+            const isChamp   = isChampionName(season.champion_name, p.name)
             return (
               <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,200,60,0.15)', background: isChamp ? 'rgba(0,0,0,0.15)' : undefined }}>
                 <td style={{ ...td, fontWeight: isChamp ? 700 : 400, color: isChamp ? '#ffe566' : 'rgba(255,235,160,0.9)' }}>
@@ -141,13 +144,24 @@ export default function SeasonChampionsTab({ seasons, allDetails, allResults, al
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <TrophyIcon size={22} color="#b5860a" />
                     <div>
-                      <div className="engraved-season-name">Season {seasonNum}</div>
+                      <div className="engraved-season-name">
+                        {s.name
+                          ? (() => {
+                              const ThemeIcon = getTheme(s.theme).Icon
+                              return <><ThemeIcon size={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />{s.name}</>
+                            })()
+                          : `Season ${seasonNum}`}
+                      </div>
                       <div className="engraved-period">{fmt(s.started_at)} — {fmt(s.ended_at)}</div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div className="engraved-champion">{s.champion_name}</div>
-                    <div className="engraved-label">Champion</div>
+                    <div className="engraved-label">
+                      {(s.champion_name || '').includes(' & ')
+                        ? <>Co-Champions <Handshake size={10} style={{ verticalAlign: '-1px' }} /></>
+                        : 'Champion'}
+                    </div>
                   </div>
                 </button>
 

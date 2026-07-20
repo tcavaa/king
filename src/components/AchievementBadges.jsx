@@ -15,7 +15,7 @@ export default function AchievementBadges({ achievements }) {
         if (!def) return null
         return (
           <div key={code} className="achievement-badge" title={`${def.label}: ${def.desc}`}>
-            <div className="achievement-badge-icon">{def.icon}</div>
+            <div className="achievement-badge-icon"><def.Icon size={19} color={def.color} /></div>
             <div className="achievement-badge-label">{def.label}</div>
             {count > 1 && <div className="achievement-badge-count">×{count}</div>}
           </div>
